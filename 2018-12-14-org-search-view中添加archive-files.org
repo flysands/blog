@@ -1,0 +1,27 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: org
+#+JEKYLL_TAGS: org
+#+JEKYLL_COMMENTS: true
+#+TITLE:org-search-view中添加已归档文件
+
+#+BEGIN_QUOTE
+Often, the set of files one would like to search by keyword is larger than one's set of active agenda files. For instance, one might archive old projects in separate files so that they no longer contribute to the agenda. Yet one would still like to search the reference material in these projects by keyword/regexp.
+
+The solution lies in the variable org-agenda-text-search-extra-files. Adding a list of files to this variable instructs org-search-view to query those files in addition to the agenda files. Note that setting org-agenda-text-search-extra-files has no effect on other types of agenda commands, such as todo and tags/property searches.
+#+END_QUOTE
+
+参考文档，需要配置org-agenda-text-search-extra-files变量。并且该变量只对org-search-view函数生效。另外可以使用org-archive-location指定归档位置和文件名。
+#+BEGIN_SRC elisp
+  (setq org-agenda-text-search-extra-files (append
+                                            (directory-files (expand-file-name "~/org/archive/") "full-name" "\\.org_archive$")
+                                            (directory-files (expand-file-name "~/Work/360/AndroidProject/archive/") "full-name" "\\.org_archive$")
+                                            ))
+
+  (setq org-archive-location (concat "archive/archive-"
+                                     (format-time-string "%Y%m" (current-time))
+                                     ".org_archive::"))
+#+END_SRC

@@ -1,0 +1,47 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: org
+#+JEKYLL_TAGS: ditaa org
+#+JEKYLL_COMMENTS: true
+#+TITLE: ditaa中文对齐问题
+
+ditaa引入中文，可以通过指定字符格式解决乱码问题。但是会出现边框对齐的问题。经过尝试，发现ditaa在处理和绘制的时候，只根据字符个数进行计算。但是一个中文的宽度是两个常规字符。所以需要重新计算，进行补齐。具体补齐方法就是有多少个中文字符就在字符串后补齐等价的空格个数。
+
+可以参考一下python代码，不仅做了补齐，还做了居中校验。
+#+BEGIN_SRC python
+import re
+'''
+正则匹配中文，固定形式：\u4E00-\u9FA5
+'''
+regex_block = "(\|.*?[\u4E00-\u9FA5]+.*?\|)"
+regex_chinese = "[\u4E00-\u9FA5]"
+with open("wbs.txt", 'r') as f:
+    content = f.readlines()
+    with open("wbs.txt_rep", 'w') as repf:
+        for line in content:
+            match_obj = re.findall(regex_block, line)
+            org = line
+            for res in match_obj:
+                cnlist = re.findall(regex_chinese, res)
+                size = len(cnlist)
+                words = res.[1:-1].strip()
+                print("words " + words)
+                org_spc_count = len(res) - len(words) - 2
+                new_spc_count = org_spc_count + size
+                half = int(new_spc_count / 2)
+                if new_spc_count % 2 == 0:
+                    rep_cnstr = "|" + " " * half + words + " " * half + "|"
+                else:
+                    rep_cnstr = "|" + " " * half + words + " " * (
+                        half + 1) + "|"
+                print(len(rep_cnstr))
+                org = org.replace(res, rep_cnstr)
+            repf.write(org)
+            print(org)
+        repf.flush()
+        repf.close()
+    f.close
+#+END_SRC 

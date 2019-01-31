@@ -1,0 +1,82 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil ^:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android
+#+JEKYLL_COMMENTS: true
+#+TITLE: android 5.1.1 源码编译
+** Android 5.1.1源码编译
+*** 编译环境
+本文编译环境采用ubuntu 16.04 + Nexus 5 + Android 5.1.1.注意对号入座.
+*** 配置环境
+1. 安装openjdk 7
+   #+BEGIN_QUOTE
+   andoird 5.1.1编译需要依赖openjdk7,不能使用oracle的jdk.
+   #+END_QUOTE
+   安装openjdk 7.
+   #+BEGIN_SRC shell
+     sudo add-apt-repository ppa:openjdk-r/ppa  
+     sudo apt-get update   
+     sudo apt-get install openjdk-7-jdk
+   #+END_SRC
+2. 安装依赖包
+   #+BEGIN_SRC shell
+     sudo apt-get install git-core gnupg flex bison gperf build-essential \
+          zip curl zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 \
+          lib32ncurses5-dev x11proto-core-dev libx11-dev lib32z-dev ccache \
+          libgl1-mesa-dev libxml2-utils xsltproc unzip
+   #+END_SRC
+*** 源码准备
+1. 下载源码
+   从官方同步太慢,建议直接从清华开源镜像站同步.
+   - 下载repo
+     #+BEGIN_SRC shell
+       mkdir ~/bin
+       PATH=~/bin:$PATH
+       curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o repo
+       chmod +x repo
+     #+END_SRC
+     在.bashrc中添加export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo/'.然后source ~/.bashrc.
+   - 同步特定版本的Android源码
+     #+BEGIN_SRC shell
+       mkdir WORKING_DIRECTORY
+       cd WORDING_DIRECTORY
+       repo init -u https://aosp.tuna.tsinghua.edu.cn/platform/manifest -b android-5.1.1_r14
+       repo sync
+     #+END_SRC
+2. 下载驱动文件
+   前往[[https://developers.google.com/android/drivers][ android驱动下载页面]] 下载对应驱动文件.本次编译选用设备为Nexus 5.编译版本号为LMY48M.把下载好的驱动包放入android根目录解压,并执行解压出来的三个脚本.注意脚本会提示你查看版权直接q,然后输入I ACCEPT.
+3. 检查make版本
+   执行make -version命令检查本机的make版本.如果make版本为4.x,需要进行降级处理.重新安装一份3.81或者3.82即可.
+   #+BEGIN_SRC shell
+     make -version
+     GNU Make 3.82
+     Built for x86_64-unknown-linux-gnu
+     Copyright (C) 2010  Free Software Foundation, Inc.
+     License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+     This is free software: you are free to change and redistribute it.
+     There is NO WARRANTY, to the extent permitted by law.
+
+     #### make completed successfully  ####
+   #+END_SRC
+   #+BEGIN_SRC shell
+     wget -o make.tar.gz http://ftp.gnu.org/gnu/make/make-3.81.tar.gz
+     tar -xvzf make-3.81.tar.gz
+     cd make-3.81
+     ./configure
+     sudo make install
+   #+END_SRC
+4. fix build-android-from-sources-unsuppoerted-reloc
+   android 5.1源码在ubuntu 16.04环境下编译存在一个由gcc版本引起的bug.需要手动修复.在源码根目录下执行如下命令即可.
+   #+BEGIN_SRC shell
+     cp /usr/bin/ld.gold prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.11-4.6/x86_64-linux/bin/ld
+   #+END_SRC
+5. 编译
+   所有环境准备完毕之后,直接开编即可.注意lunch的时候要选择对应的手机型号.本文为aosp_hammerhead-userdebug.
+   #+BEGIN_SRC shell
+   source build/envsetup.sh
+   lunch
+   make -j4
+   #+END_SRC

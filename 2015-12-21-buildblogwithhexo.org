@@ -1,0 +1,230 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: hexo
+#+JEKYLL_TAGS: blog
+#+JEKYLL_COMMENTS: true
+#+TITLE: 用hexo搭建个人blog
+
+** hexo安装
+  以前陆陆续续用过csdn以及guthub pages写blog.始终没有坚持下来.近两年来一直在
+学习eamcs.其中org-mode让我为之倾倒.在工作生活中也都有使用emacs.用过emacs群友
+的org-page.但是界面不好看.最后还是放弃.直到遇到hexo和org-octopresss的组合.利
+用org-mode进行写作,然后用org-octopress转化成html.搭配hexo的blog框架和漂亮的主
+题.一切轻松简单.
+
+  关于hexo的介绍可以直接去看文档,开发者是一个台湾人.据说在高中时期就开发了hexo.
+hexo采用nodejs开发,安装过程和配置都比较简单.
+#+BEGIN_SRC shell
+npm install -g hexo-cli
+hexo init <floder>
+cd <floder>
+npm install
+#+END_SRC
+
+hexo project根目录如下.
+[[file:../images/tree.png]]
+_config.yml是hexo的站点配置文件,可以配置标题,地区,rss,部署以及评论等功能.
+#+BEGIN_SRC shell
+# Hexo Configuration
+## Docs: http://hexo.io/docs/configuration.html
+## Source: https://github.com/hexojs/hexo/
+
+# Site
+title: Flysands Blog
+subtitle: Simple is the best
+description: Keep life stayreal
+author: Flysands
+author_title: 'Programmer & Emacser'
+avatar: css/images/mylogo.jpg
+location: 'Chengdu, China'
+follow: https://github.com/chenxs110/
+language: zh-CN
+timezone:
+since: 2015 # The start year showing in your copyright section.
+
+# URL
+## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
+url: http://chenxs110.github.com
+# root: /
+# permalink: :year/:month/:day/:title/
+permalink: blog/:year-:month-:day-:title.html
+permalink_defaults:
+
+# Directory
+source_dir: source
+public_dir: public
+tag_dir: tags
+archive_dir: archives
+category_dir: categories
+code_dir: downloads/code
+i18n_dir: :lang
+skip_render:
+
+# Writing
+new_post_name: :title.md # File name of new posts
+default_layout: post
+titlecase: false # Transform title into titlecase
+external_link: true # Open external links in new tab
+filename_case: 0
+render_drafts: false
+post_asset_folder: false
+relative_link: false
+future: true
+highlight:
+  enable: true
+  line_number: true
+  tab_replace:
+
+# Category & Tag
+default_category: uncategorized
+category_map:
+tag_map:
+
+# Date / Time format
+## Hexo uses Moment.js to parse and display date
+## You can customize the date format as defined in
+## http://momentjs.com/docs/#/displaying/format/
+date_format: YYYY-MM-DD
+time_format: HH:mm:ss
+
+# Pagination
+## Set per_page to 0 to disable pagination
+per_page: 6
+pagination_dir: page
+
+# Extensions
+## Plugins: https://github.com/hexojs/hexo/wiki/Plugins
+plugins:
+  hexo-generator-feed
+## Themes: https://github.com/hexojs/hexo/wiki/Themes
+theme: icarus
+
+# Disqus
+# disqus_shortname: hexo-theme-icarus
+
+# DuoShuo
+duoshuo_shortname: flysands
+
+
+# Deployment
+## Docs: http://hexo.io/docs/deployment.html
+deploy:
+  type: git
+  repository: http://github.com/chenxs110/chenxs110.github.io.git
+  branch: master
+#+END_SRC
+
+** 配置主题
+  hexo的一大优点,就是有很多漂亮的主题.我选择了icarus.并配置了评论插件多说.
+
+** github pages搭建静态blog
+可以参考github配置自己的blog.然后修改hexo站点中的deploy.注意要安装相应的deployer.
+我用的是github.所以只需要安装git deployer即可.
+#+BEGIN_SRC shell
+# Deployment
+## Docs: http://hexo.io/docs/deployment.html
+deploy:
+  type: git
+  repository: http://github.com/chenxs110/chenxs110.github.io.git
+  branch: master
+#+END_SRC
+
+安装deployer.
+#+BEGIN_SRC shell
+npm install hexo-deployer-git --save
+#+END_SRC
+
+如果需要开启rss订阅,需要安装generate-feed插件.
+#+BEGIN_SRC shell
+npm install hexo-generator-feed --save
+#+END_SRC
+并修改_config.yml文件添加generate-feed插件.
+#+BEGIN_SRC shell
+plugins:
+  hexo-generator-feed
+#+END_SRC
+在push到仓库之前,需要先执行hexo generate然后再执行hexo deploy进行部署.
+** emacs org-mode写blog
+*** 七牛云存储&hexo交互
+
+写了几个简单函数用来做文件上传以及hexo交互.
+
+#+BEGIN_SRC emacs-lisp
+(defun chenxuesong-qiniu-upload-img (command)
+  (let ((command-str (format "~/Work/dev-tools/qiniu-devtools/qrsync %s"
+                             command)))
+    (shell-command-to-string command-str)))
+
+(defun chenxuesong-qiniu-achieve-image ()
+  (shell-command-to-string "cp -rf ~/Work/blog/images/* ~/Work/blog/images-achieve")
+  (shell-command-to-string "rm -f ~/Work/blog/images/*"))
+
+(defun chenxuesong-hexo-generate (args)
+  (interactive "P")
+  (let ((default-directory chenxueosng-blog-dir))
+    (shell-command-to-string "hexo generate")
+    (message "hexo generate complete.")))
+
+(defun chenxuesong-hexo-deploy (args)
+  (interactive "P")
+  (let ((default-directory chenxueosng-blog-dir))
+    (chenxuesong-qiniu-upload-img (concat chenxueosng-blog-dir "qiniu.json"))
+    (shell-command-to-string "hexo deploy")
+    (chenxuesong-qiniu-achieve-image)
+    (message "hexo deploy complete.")))
+
+(defun chenxuesong-insert-qiniu-link (imagename)
+  (interactive "sImage name: ")
+  (insert (concat (format "[[%s%s]]" "http://7xia6k.com1.z0.glb.clouddn.com/"
+                          imagename))))
+#+END_SRC
+
+*** org-octopress
+
+org-octopress原本是用来把org转化成适合octopress的html文件.由于hexo兼容
+octopress.所以也可以用来生成适用于hexo的html文件.
+配置如下:
+#+BEGIN_SRC emacs-lisp
+  (setq org-blog-dir "~/Work/blog/")
+  (setq org-octopress-directory-top org-blog-dir)
+  (setq org-octopress-directory-posts (concat org-blog-dir "source/_posts"))
+  (setq org-octopress-directory-org-top org-blog-dir)
+  (setq org-octopress-directory-org-posts (concat org-blog-dir "blog"))
+  (setq org-octopress-setup-file (concat org-blog-dir "setupfile.org"))
+#+END_SRC
+注意org-posts文件夹不能放到source文件中.否则会生成失败.
+
+*** 快捷键
+添加了几个用于发布和转换html的快捷键.
+#+BEGIN_SRC emacs-lisp
+  (evil-leader/set-key "oc" 'chenxuesong/org-create-org-blog-file)
+  (evil-leader/set-key "op" 'chenxuesong/org-save-and-export)
+  (evil-leader/set-key "od" 'chenxuesong-hexo-deploy)
+  (evil-leader/set-key "og" 'chenxuesong-hexo-generate)
+
+  (defun chenxuesong-qiniu-upload-img (command)
+    (let ((command-str (format "~/Work/dev-tools/qiniu-devtools/qrsync %s"
+                               command)))
+      (shell-command-to-string command-str)))
+
+  (defun chenxuesong-qiniu-achieve-image ()
+    (shell-command-to-string "cp -rf ~/Work/blog/images/* ~/Work/blog/images-achieve")
+    (shell-command-to-string "rm -f ~/Work/blog/images/*"))
+
+  (defun chenxuesong-hexo-generate (args)
+    (interactive "P")
+    (let ((default-directory chenxueosng-blog-dir))
+      (shell-command-to-string "hexo generate")
+      (message "hexo generate complete.")))
+
+  (defun chenxuesong-hexo-deploy (args)
+    (interactive "P")
+    (let ((default-directory chenxueosng-blog-dir))
+      (chenxuesong-qiniu-upload-img (concat chenxueosng-blog-dir "qiniu.json"))
+      (shell-command-to-string "hexo deploy")
+      (message "hexo deploy complete.")))
+
+#+END_SRC

@@ -1,0 +1,152 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: lisp
+#+JEKYLL_TAGS: lisp
+#+JEKYLL_COMMENTS: true
+#+TITLE: 理解闭包
+
+** Lambda the Ultimate
+   - 理解闭包
+     闭包定义:如果一个函数返回另一个函数,而被返回函数又需要外层函数的变量时,不会立即释放
+     这个变量,而是允许被返回的函数引用这些变量.支持这种机制的语言称为支持闭包机制,而这个内
+     部函数连同其自由变量就形成了一个闭包.
+     #+BEGIN_SRC scheme
+       (define eq?-c
+         (lambda (a)
+           (lambda (x)
+             (eq? x a))))
+     #+END_SRC
+     以上eq?-c函数就有一个闭包,首先eq?-c满足一个函数返回另一个函数的条件,eq?-c返回一个lambda函数.
+     lambda函数却引用了外部变量a.所以a为自由变量,lambda函数与自由变量a形成了一个闭包.
+     再看下面这个例子详细理解一下闭包概念.
+     #+BEGIN_SRC scheme
+       (define add-a
+         (lambda (a)
+           (lambda (x)
+             (+ x a))))
+     #+END_SRC
+     这个lambda函数是不完整的,(+ x a)中的a是多少?有两个方法回答这个问题.
+     第一种叫"动态作用域",a的值决定于函数调用时上下文中a的值.
+     (define a 1)
+     (add-a 1)
+     以上输出应该为2.因为调用(add-a 1)时,上下文中存在a,并且值为1.
+     动态作用域的问题是,函数每一次调用相同的参数未必返回相同的值,其返回值还取决于上下文的某些值.这样
+     的函数具有不确定性.
+     第二种是"词法作用域",a的值取决于函数定义时上下文中的值.
+     (define fun (add-a 2))
+     (define a 1)
+     (fun 1)
+     输出为3.因为定义(lambda (x) (+ x a))时,add-a函数环境中a = 2.所以fun其实的等价(lambda (x) (+ x 2)).
+     因为fun要"记住"自己定义时a的值为2,所以实现时
+     (lambda (x) (+ x a))和a = 2 被打包在一块,被称为"闭包",意思是它是完整独立的,仅仅依靠调用时参数求值.
+     不再依赖调用时的上下文.
+     dynamic scope在每次函数求值的时候都会在这唯一的一个env里查询或更新.而static scope(lexical scope)
+     是每次函数求值的时候都创建一个新的env,包含了函数定义时候的所能访问到的各种binding.这个新的env连
+     同那个函数一起.俗称闭包Closure.
+     词法作用域的函数中遇到既不是形参也不是函数内部定义的局部变量的变量时,去函数定义时的环境中查询.
+     动态域的函数中遇到既不是形参也不是函数内部定义的局部变量的变量时,到函数调用时的环境中查.
+   - 闭包的好处
+     关于闭包的好处可以看看下面这个例子.
+     #+BEGIN_SRC scheme
+       (define multi-delete
+         (lambda (test-fun)
+           (lambda (value lat)
+             (cond
+              ((null? lat) (quote ()))
+              ((test-fun (car lat) value) ((multi-delete test-fun) value (cdr lat)))
+              (else (cons (car lat) ((multi-delete test-fun) value (cdr lat))))
+              ))))
+
+       ((multi-delete =) 5 '(1 2 3 1 1 5 5 6 7))
+       ((multi-delete >) 5 '(1 2 3 1 1 5 5 6 7))
+       ((multi-delete <) 5 '(1 2 3 1 1 5 5 6 7))
+       ((multi-delete (lambda (x y) (= x (+ y 2)))) 5 '(1 2 3 1 1 5 5 6 7))
+
+       ;; => (1 2 3 1 1 6 7)
+       ;; => (1 2 3 1 1 5 5)
+       ;; => (5 5 6 7)
+     #+END_SRC
+     以上函数用来从lat(纯数字list)中删除元素,实现了通用性很强的函数.multi-delete的删除过程
+     和删除条件分离.这样我们就可以复用multi-delete实现不同条件的删除.
+   - again
+     #+BEGIN_SRC scheme
+       ;; 功能
+       ;; 查询lat中的原子是否和a相等,如果相等则放入ls2,不相等则放入ls1.
+       ;; 最后判断ls2是否为空.
+       (define multirember&co
+         (lambda (a lat col)
+           (cond
+            ((null? lat)
+             (col (quote ()) (quote ())))
+            ((eq? (car lat) a)
+             (multirember&co a (cdr lat)
+                             (lambda (newlat seen)
+                               (col newlat
+                                    (cons (car lat) seen)))))
+            (else
+             (multirember&co a (cdr lat)
+                             (lambda (newlat seen)
+                               (col (cons (car lat) newlat) seen)))))))
+       (define a-friend
+         (lambda (x y)
+           (null? y)))
+     #+END_SRC
+     为了便于理解,对以上代码做以下修改.
+     #+BEGIN_SRC scheme
+       (define multirember&co
+         (lambda (a lat col)
+           (begin
+             (display col)
+             (display "chen\n"))
+           (cond
+            ((null? lat)
+             (col (quote ()) (quote ())))
+            ((eq? (car lat) a)
+             (multirember&co a (cdr lat)
+                             (lambda (newlat seen)
+                               (begin
+                                 (display newlat)
+                                 (display seen)
+                                 (display "\n")
+                                 (col newlat
+                                      (cons (car lat) seen))))))
+            (else
+             (multirember&co a (cdr lat)
+                             (lambda (newlat seen)
+                               (begin
+                                 (display "<")
+                                 (display newlat)
+                                 (display seen)
+                                 (display ">\n")
+                                 (col (cons (car lat) newlat) seen))))))))
+
+       (define a-friend
+         (lambda (x y)
+           (begin
+             (display "[")
+             (display x)
+             (display y)
+             (display "]\n"))))
+       (multirember&co 'tuna '(strawberries tuna and swordifish) a-friend)
+       ;;输出
+       ;;#<procedure (a-friend x y)>chen
+       ;;#<procedure (? newlat seen)>chen
+       ;;#<procedure (? newlat seen)>chen
+       ;;#<procedure (? newlat seen)>chen
+       ;;#<procedure (? newlat seen)>chen
+       ;;<()()>
+       ;;<(swordifish)()>
+       ;;(and swordifish)()
+       ;;<(and swordifish)(tuna)>
+       ;;[(strawberries and swordifish)(tuna)]
+       ;;(multirember&co 'tuna '(strawberries tuna and swordifish) a-friend)
+     #+END_SRC
+     lisp递归可以理解成不停地代换至终止条件,然后执行.通过display输出分析,multirember&co
+     调用了五次,其中第一次为a-friend函数,其余都为lambda表达式.其中lambda是一个闭包,依赖了
+     外部col参数,所以col为自由变量.参考闭包定义和词法作用域,"词法作用域的函数中遇到既不是
+     形参也不是函数内部定义的局部变量的变量时,去函数定义时的环境中查询".所以第一次定义
+     (lambda (newlat seen))时的col为,a-friend函数.第二次以及之后的(lambda (newlat seen))
+     中的col同为(lambda (newlat seen)).

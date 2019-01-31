@@ -1,0 +1,30 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: lisp
+#+JEKYLL_TAGS: lisp
+#+JEKYLL_COMMENTS: true
+#+TITLE: 停机问题
+
+** 停机问题                                                     
+[[https://zh.wikipedia.org/wiki/%25E5%2581%259C%25E6%259C%25BA%25E9%2597%25AE%25E9%25A2%2598][停机问题wiki]]
+证明过程:
+假设存在程序stop?满足以下要求:
+(stop? prog),如果prog停机返回#t否则返回#f.
+定义不停机程序loop
+#+BEGIN_SRC scheme
+  (define loop
+    (lambda() (loop)))
+#+END_SRC
+构造foo
+#+BEGIN_SRC scheme
+  (define foo
+    (lambda()
+      (and (stop? foo) (loop))))
+#+END_SRC
+使用(foo)调用foo程序,首先会对(stop? foo)表达式求值.
+假设返回#f(foo不停机),根据and短路求值特性foo程序会直接返回#f从而结束程序(定义说明停机);
+假设返回#t(foo停机),则会继续对(loop)求值,(loop)程序会一直运行(定义说明不停机).
+两种case都产生矛盾,说明stop?程序不存在.

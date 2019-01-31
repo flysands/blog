@@ -1,0 +1,156 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil ^:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android xposed
+#+JEKYLL_COMMENTS: true
+#+TITLE: 编译xposed源码
+** Android 5.1.1 编译Xposed框架
+本文假设你了解android源码编译,git,xposed以及android Native相关知识.有关android源码编译可以参考之前的文章[[https://mp.weixin.qq.com/s/DH3f2yzL-g1iZEN5E4W2vw][Android 5.1.1源码编译]].编译主机环境为ubuntu 16.04 + java 1.8.
+*** 安装jdk 1.8
+Ubuntu 16.04默认的的java版本为1.6.编译Xposed框架最新版需要java 1.8.所以从官网下载jdk 1.8,文件名为jdk-7u80-linux-x64.tar.gz,然后执行命令进行手动安装.
+#+BEGIN_SRC shell
+  cd /opt/
+  tar –zxvf jdk-8u151-linux-x64.tar.gz
+  sudo mkdir /usr/lib/jvm
+  sudo mv ./jdk1.8.0_151 /usr/lib/jvm
+#+END_SRC
+然后再export 4个java相关的环境变量.执行java -version确认版本切换是否成功.
+#+BEGIN_SRC shell
+  export JAVA_HOME=/usr/lib/jvm/jdk1.8.0_151
+  export JRE_HOME=${JAVA_HOME}/jre
+  export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib
+  export PATH=${JAVA_HOME}/bin:$PATH
+#+END_SRC
+*** 同步xposed源码
+**** XposedTools
+#+BEGIN_QUOTE
+XposedTools是官方提供的一套工具集,方便用来编译和打包Xposed框架.
+#+END_QUOTE
+直接从官网clone源码备用.
+#+BEGIN_SRC shell
+  cd ~
+  git clone https://github.com/rovo89/XposedTools.git
+#+END_SRC
+XposedTools目录下面有两个重要文件.其中build.pl是编译脚本,该脚本根据build.conf文件里的选项进行编译.build.conf.sample是官方提供的编译选项模板,需要自行修改.首先将build.conf.sample更名为build.conf.然后修改outdir,javadir和AospDir,路径要匹配自己的android源码位置.
+#+BEGIN_SRC shell
+  [General]
+  outdir = /home/mobsec/Android/aosp_5.1/out
+  javadir = /home/mobsec/Android/aosp_5.1/XposedBridge
+
+  [Build]
+  # Please keep the base version number and add your custom suffix
+  version = 65 (custom build by xyz / %s)
+  # makeflags = -j4
+
+  [GPG]
+  sign = release
+  user = 852109AA!
+
+  # Root directories of the AOSP source tree per SDK version
+  [AospDir]
+  22 = /home/mobsec/Android/aosp_5.1
+  #21 = /android/aosp/500
+
+  # SDKs to be used for compiling BusyBox
+  # Needs https://github.com/rovo89/android_external_busybox
+  [BusyBox]
+  arm = 21
+  x86 = 21
+  armv5 = 17
+#+END_SRC
+**** xposed
+xposed为整个Xposed框架的native部分,主要内容为xposed修改的app_process源码和相关库文件.这里需要提一下,这部分源码有两种同步方式.第一采用修改local_manifests,然后repo sync的方式.第二种则为手动下载合并.本文采用第二种方式.
+#+BEGIN_SRC shell
+  cd aosp_dir
+  cd cd frameworks/base/cmds/
+  git clone https://github.com/rovo89/Xposed.git xposed
+#+END_SRC
+**** android_art
+Xposed为了支持新的runtime,修改了art的源码.我们需要把原来的art源码替换成Xposed提供的代码.
+#+BEGIN_SRC shell
+  cd aosp_dir
+  rm -rf art
+  git clone https://github.com/rovo89/android_art.git art
+  cd art
+  git checkout xposed-lollipop-mr1
+#+END_SRC
+**** XposedBridge
+XposedBridge的代码直接clone即可,没有版本的限制.需要注意与javadir对应.
+#+BEGIN_SRC shell
+  cd aosp_dir
+  git clone https://github.com/rovo89/XposedBridge.git
+#+END_SRC
+*** 编译整个框架
+#+BEGIN_QUOTE
+编译Native代码的时候需要依赖java层代码的输出文件XposedBridge.jar.可以直接把XposedBridge.jar直接copy到build.conf文件中的outdir/java/路径下进行预编译.也可以手动编译整个XposedBridge.jar.
+#+END_QUOTE
+**** 编译java层代码
+编译Xposed java层代码需要配置好android sdk环境.先下载sdk工具,然后解压.
+#+BEGIN_SRC shell
+  wget http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz
+#+END_SRC
+执行list sdk命令查看可以安装的sdk包.-a选项表示列举所有包.安装source的时候才需要使用-a选项.
+#+BEGIN_SRC shell
+  ./android list sdk --extended --proxy-host mirrors.neusoft.edu.cn --proxy-port 80 -s -a
+#+END_SRC
+依次安装Android SDK Build-Tools 23.0.3,Android SDK Platform 23.
+#+BEGIN_SRC shell
+  ./android list sdk --extended --proxy-host mirrors.neusoft.edu.cn --proxy-port 80 -s
+  ./android update sdk --no-ui --filter 包id --proxy-host mirrors.neusoft.edu.cn --proxy-port 80 -s
+#+END_SRC
+使用带-a参数的list命令,安装source包.
+#+BEGIN_SRC shell
+  ./android list sdk --extended --proxy-host mirrors.neusoft.edu.cn --proxy-port 80 -s -a
+  ./android update sdk --no-ui --filter 包id --proxy-host mirrors.neusoft.edu.cn --proxy-port 80 -s
+#+END_SRC
+然后在Xposed目录下,添加local.properties文件.并在其中填写sdk路径.
+#+BEGIN_SRC shell
+  sdk.dir=/home/mobsec/sdk
+#+END_SRC
+#+BEGIN_QUOTE
+XposedBridge采用gradle编译,如果遇到lint error会终止整个编译.我们可以修改lint error或者修改配置忽略lint error.
+#+END_QUOTE
+在XposedBridge/hiddenapistubs/build.gradle文件中的android段落中,添加lintOptions.这样修改之后,当编译遇到lint error时不会终止编译过程.
+#+BEGIN_SRC shell
+apply plugin: 'com.android.library'
+
+android {
+    // Only build the release variant
+    // add fix
+    lintOptions {
+	      abortOnError false
+    }
+    variantFilter { variant ->
+        if (variant.buildType.name != BuilderConstants.RELEASE) {
+            variant.ignore = true
+        }
+    }
+}
+#+END_SRC
+准备工作完成,直接使用命令编译Xposed java代码.
+#+BEGIN_SRC shell
+  cd XposedTools_dir
+  ./build.pl -a java
+#+END_SRC
+编译成功输出以下日志.
+#+BEGIN_SRC shell
+  BUILD SUCCESSFUL
+
+  Total time: 0.871 secs
+
+  Copying APK to XposedBridge.jar...
+  Skipping non-existent /home/mobsec/Android/aosp_5.1/XposedBridge/app/build/outputs/apk/app-release.apk
+  Skipping non-existent /home/mobsec/Android/aosp_5.1/XposedBridge/app/build/outputs/apk/app-release-unaligned.apk
+  /home/mobsec/Android/aosp_5.1/XposedBridge/app/build/outputs/apk/app-release-unsigned.apk => /home/mobsec/Android/aosp_5.1/out/java/XposedBridge.jar
+
+  Done!
+#+END_SRC
+**** 编译native层代码
+#+BEGIN_SRC shell
+  cd XposedTools_dir
+  ./build.pl -t arm:22
+#+END_SRC
+

@@ -1,0 +1,171 @@
+#+JEKYLL_CATEGORIES: docker
+#+JEKYLL_TAGS: docker
+#+JEKYLL_COMMENTS: true
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil ^:nil
+#+TITLE: 搭建私有registry
+
+** 背景
+** 选型
+** Portus
+*** 下载
+
+#+BEGIN_SRC shell
+git clone https://github.com/SUSE/Portus.git
+#+END_SRC
+*** 初次运行
+
+Portus提供了一个体验版本.compose-setup.sh.简单运行即可.
+#+BEGIN_SRC shell
+compose-setup.sh -e external-ip
+#+END_SRC
+
+脚本很简单,做了一下几件事情.
+1. 检查参数和版本
+2. 生成两个config文件(根据template文件生成docker-compose.yml和./compose/registry/config.yml)
+3. docker-compose启动数据库,portus_web,crono以及registry
+4. 初始化数据库
+5. 进入external-ip:3000端口 enjoy it!
+
+*** Warning
+
+shell提示warning.原来用compose-setup部署的版本只能用于开发或者测试.
+#+BEGIN_SRC shell
+###########
+# WARNING #
+###########
+ 
+This deployment method is intended for testing/development purposes.
+To deploy Portus on production please take a look at: http://port.us.org/documentation.html
+#+END_SRC
+总结起来有一下几个问题.
+1. registry不支持ssl
+2. 没有使用ca机构颁发的证书
+3. 数据库以及registry data没有持久化
+
+** Production部署
+部署生产环境的私有registry,需要以下三个模块相辅相成.主要是设置证书和registry以及持久化.
+
+*** 替换证书
+
+docker-compose.yml指定了registry使用的证书.该证书存放于容器中/etc/docker/registry/目录下.
+#+BEGIN_SRC shell
+cd Portus
+mkdir certs
+cp your-ca.crt xxxx.crt
+cp your-ca.key xxxx.key
+#+END_SRC
+_xxxx替换为你自己想要定义的名字._
+*** 生成挂载文件夹
+
+#+BEGIN_SRC shell
+cd Portus
+cd ..
+mkdir portusdb
+mkdir registry_data
+#+END_SRC
+*** Portus web
+由于替换了registry使用的证书.所以Portus web也要使用配对的key文件.
+在docker-compose.yml中添加环境变量 PORTUS_KEY_PATH.
+*** Registry
+测试版本的部署,没有使用持久化以及tls.持久化需要在docker-compose.yml中配置,
+tls在./compose/registry/config.yml中配置.配置好的config.yml如下.
+#+BEGIN_SRC yaml
+version: 0.1
+storage:
+  filesystem:
+    rootdirectory: /registry_data
+  delete:
+    enabled: true
+http:
+  addr: 0.0.0.0:5000
+  debug:
+    addr: 0.0.0.0:5001
+  tls:
+    certificate: /certs/xxxx.crt
+    key: /certs/xxxx.key
+auth:
+  token:
+    realm: http:/your-host/registry.testbird.com:3000/v2/token
+    service: your-host:5000
+    issuer: your-host
+    rootcertbundle: /etc/docker/registry/xxxx.crt
+notifications:
+  endpoints:
+    - name: portus
+      url: http://your-host:3000/v2/webhooks/events
+      timeout: 500ms
+      threshold: 5
+      backoff: 1s
+#+END_SRC
+*** Database
+
+数据库使用mariadb.根据官方文档,持久化储存只需要挂载一个文件夹到容器的/var/lib/mysql
+文件夹即可./var/lib/mysql为mariadb的默认db路径.参见docker-compose.yml.
+*** docker-compose.yml
+#+BEGIN_SRC yaml
+web:
+  image: portus_web
+  command: puma -b tcp://0.0.0.0:3000 -w 3
+  environment:
+    - PORTUS_MACHINE_FQDN_VALUE=your-host
+    - PORTUS_DB_HOST=portus_db_1
+    - PORTUS_KEY_PATH=certs/xxxx.key
+  volumes:
+    - .:/portus
+  ports:
+    - 3000:3000
+  links:
+    - db
+crono:
+  image: portus_web
+  entrypoint: bin/crono
+  environment:
+    - PORTUS_MACHINE_FQDN=your-host
+    - PORTUS_DB_HOST=portus_db_1
+  volumes:
+    - .:/portus
+  links:
+    - db
+db:
+  image: library/mariadb:10.0.23
+  environment:
+    MYSQL_ROOT_PASSWORD: portus
+  volumes:
+    - ../portusdb:/var/lib/mysql
+registry:
+  image: library/registry:2.1.1
+  volumes:
+    - ./certs:/certs
+    - ../registry_data:/registry_data
+    - ./certs/xxxx.crt:/etc/docker/registry/xxxx.crt:ro
+    - ./compose/registry/config.yml:/etc/docker/registry/config.yml:ro
+  ports:
+    - 5000:5000
+    - 5001:5001 # required to access debug service
+  links:
+    - web
+#+END_SRC
+*** 相关命令
+
+#+BEGIN_SRC shell
+#启动
+cd Portus
+docker-compose up -d
+#停止
+docker-compose kill
+#删除
+docker-compose rm -fv
+#+END_SRC
+*** 初始化数据库
+第一次启动后,需要执行两个rake命令初始化数据库.
+#+BEGIN_SRC shell
+#进入web容器
+docker exec -it xxx /bin/sh
+docker-compose run --rm web rake db:migrate:reset > /dev/null
+docker-compose run --rm web rake db:seed > /dev/null
+#+END_SRC
+

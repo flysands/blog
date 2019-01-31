@@ -1,0 +1,202 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: web
+#+JEKYLL_TAGS: web security
+#+JEKYLL_COMMENTS: true
+#+TITLE:web发展简介
+
+** 静态页面时代
+Web设计初衷是一个静态信息资源发布媒介，通过超文本标记语言（HTML）描述信息资源，通过统一资源标识符（URI）定位信息资源，通过超文本转移协议（HTTP）请求信息资源。HTML、URL和HTTP三个规范构成了Web的核心体系结构，是支撑着Web运行的基石。用通俗的一点的话来说，客户端（一般为浏览器）通过URL找到网站(如www.google.com)，发出HTTP请求，服务器收到请求后返回HTML页面。这个时期的网站都是功能很简单的静态页面。这里所说的静态是指，请求访问的网页都是事先编辑好的，不能改变。静态页面的缺点很明显，访问的资源必须事先已经存在，否则访问不到。而动态展示也是没法实现的。比如：某人刚发布了一篇文章，想在首页立即看到是不可能的。只能重新手动编辑首页，把文章链接加进去。
+** CGI-动态内容出现
+随着时间的流逝，人们已经不仅仅满足于访问放在Web服务器上的静态文件，1993年CGI（Common Gateway Interface）出现了，Web上的动态信息服务开始蓬勃兴起。CGI定义了Web服务器与外部应用程序之间的通信接口标准，因此Web服务器可以通过CGI执行外部程序，让外部程序根据Web请求内容生成动态的内容。Perl因为跨操作系统和易于修改的特性成为CGI的主要编写语言。当然，CGI可以用任何支持标准输入输出和环境变量的语言编写，比如Shell脚本,C/C++语言，只要符合接口标准即可。比如你用C语言编写CGI程序，你把希望返回的HTML内容通过printf输出就可以发送给Web服务器，进而返回给用户。举个例子。下面一段C代码，经过编译成可执行程序后，就是一个CGI。
+#+BEGIN_SRC c
+  int _tmain(int argc, _TCHAR* argv[])
+  {
+    printf("Content-type:text/html\n\n");
+    printf("%s",getenv("QUERY_STRING")); //打印get获取的信息
+    return 0;
+  }
+#+END_SRC
+下面的python脚本，也是一个CGI。
+#+BEGIN_SRC python
+  #!/usr/bin/python
+  # -*- coding: UTF-8 -*-
+
+  print "Content-type:text/html"
+  print                               # 空行，告诉服务器结束头部
+  print '<html>'
+  print '<head>'
+  print '<meta charset="utf-8">'
+  print '<title>Hello Word - 我的第一个 CGI 程序！</title>'
+  print '</head>'
+  print '<body>'
+  print '<h2>Hello Word! 我是来自菜鸟教程的第一CGI程序</h2>'
+  print '</body>'
+  print '</html>'
+#+END_SRC
+*** CGI的缺点
+- 消耗资源多
+
+  每个请求都会启动一个CGI进行，进程消耗资源15M内存的话，同时到达100个请求的话，就会占用1.5G内存。如果请求更多，资源消耗是不可想象的。
+
+- 请求过程慢
+
+  启动进程本身就慢。每次启动进程都需要重新初始化数据结构等，会变得更慢。
+** Servlet-Java Web崛起
+鉴于CGI的一些缺点，Java Web在开始设计的时候就想出了一种解决方案 -- Servlet。其实它的本质是一种运行服务器端的java应用程序，具有独立于平台和协议的特性，它工作在客户端请求与服务器响应的中间层，运行于服务器端，它由Servlet容器所管理，用于生成动态的内容。 Servlet是平台独立的Java类，编写一个Servlet，实际上就是按照Servlet规范编写一个Java类。Servlet被编译为平台独立的字节码，可以被动态地加载到支持Java技术的Web服务器中运行。 Servlet容器也叫做Servlet引擎，是Web服务器或应用程序服务器的一部分，用于在发送的请求和响应之上提供网络服务，解码基于MIME的请求，格式化基于MIME的响应。Servlet没有main方法，不能独立运行，它必须被部署到Servlet容器中，由容器来实例化和调用 Servlet的方法（如doGet()和doPost()），Servlet容器在Servlet的生命周期内包容和管理Servlet。最早支持 Servlet 技术的是 JavaSoft 的 Java Web Server。此后，一些其它的基于 Java 的 Web Server 开始支持标准的 Servlet API。
+Servlet 的主要功能在于交互式地浏览和修改数据，生成动态 Web 内容。这个过程为：
+1. 客户端发送请求至服务器端；
+2. 服务器将请求信息发送至 Servlet；
+3. Servlet 生成响应内容并将其传给服务器。响应内容动态生成，通常取决于客户端的请求；
+4. 服务器将响应返回给客户端。
+还是用一个例子来说明Servlet的使用场景，以下代码展示了获取表单数据，并返回一个页面显示其内容。首先，我们得指定URL和Servlet的对应关系。这个映射关系需要在web.xml中配置：
+#+BEGIN_SRC xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <web-app>
+    <servlet>
+      <servlet-name>HelloForm</servlet-name>
+      <servlet-class>com.runoob.test.HelloForm</servlet-class>
+    </servlet>
+    <servlet-mapping>
+      <servlet-name>HelloForm</servlet-name>
+      <url-pattern>/TomcatTest/HelloForm</url-pattern>
+    </servlet-mapping>
+  </web-app>
+#+END_SRC
+web.xml中配置的意思是：当URI为/TomcatTest/HelloForm时，交给com.runoob.test.HelloForm处理。而HelloForm正是个Servlet
+#+BEGIN_SRC java
+  import java.io.IOException;
+  import java.io.PrintWriter;
+
+  import javax.servlet.ServletException;
+  import javax.servlet.annotation.WebServlet;
+  import javax.servlet.http.HttpServlet;
+  import javax.servlet.http.HttpServletRequest;
+  import javax.servlet.http.HttpServletResponse;
+
+  /**
+   ,* Servlet implementation class HelloForm
+   ,*/
+  @WebServlet("/HelloForm")
+  public class HelloForm extends HttpServlet {
+      private static final long serialVersionUID = 1L;
+       
+      /**
+       ,* @see HttpServlet#HttpServlet()
+       ,*/
+      public HelloForm() {
+          super();
+          // TODO Auto-generated constructor stub
+      }
+
+      /**
+       ,* @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
+       ,*/
+      protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+          // 设置响应内容类型
+          response.setContentType("text/html;charset=UTF-8");
+
+          PrintWriter out = response.getWriter();
+          String title = "使用 GET 方法读取表单数据";
+          // 处理中文
+          String name =new String(request.getParameter("name").getBytes("ISO8859-1"),"UTF-8");
+          String docType = "<!DOCTYPE html> \n";
+          out.println(docType +
+                      "<html>\n" +
+                      "<head><title>" + title + "</title></head>\n" +
+                      "<body bgcolor=\"#f0f0f0\">\n" +
+                      "<h1 align=\"center\">" + title + "</h1>\n" +
+                      "<ul>\n" +
+                      "  <li><b>站点名</b>："
+                      + name + "\n" +
+                      "  <li><b>网址</b>："
+                      + request.getParameter("url") + "\n" +
+                      "</ul>\n" +
+                      "</body></html>");
+      }
+    
+      // 处理 POST 方法请求的方法
+      public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+          doGet(request, response);
+      }
+  }
+#+END_SRC
+*** Servlet的特点
+Servlet相对于CGI有了很大的改进，效率更高，功能更强大，更容易移植。主要表现在一下几个方面：
+1. CGI每个请求启动一个进程，而Servlet是更轻量的线程。
+2. CGI每个进程都需要初始化，Servlet只初始化一次实例就行。
+3. Servlet依托于Java语言，具有很好的跨平台型。CGI根据语言的不同，跨平台型不同。
+4. CGI与数据库连接需要重连，Servlet可以使用数据库连接池。
+5. Java有丰富的、各种各样的库函数。
+*** Servlet的缺点
+看上面的代码，会发现html代码是写在Java代码中的。对于前端人员来说，这种形式非常非常难以开发和修改。
+** 脚本语言出现
+这个时候我们已经可以在Web上提供动态功能了，比如网站访问的计数，表单的处理。对每个请求都会有一个Servlet或者CGI程序来处理。想象一下用在程序语言中去输出一大堆复杂的HTML字符串，是不是有点蛋疼，可读性和维护性是个大问题。为了处理更复杂的应用，一种方法是把HTML返回中固定的部分存起来（我们称之为模版），把动态的部分标记出来，Web请求处理的时候，你的程序先生成那部分动态的内容，再把模版读入进来，把动态内容填充进去，形成最终返回。举个例子，搜索一个关键词，搜索引擎的Web服务器可以先从后台索引服务器里拿到数据，然后把这些数据填充到返回结果的HTML模版中，返回给浏览器。但是这件事情自己来做显然太繁琐而且是重复劳动。于是1994年的时候，PHP诞生了，PHP可以把程序（动态内容）嵌入到HTML（模版）中去执行，不仅能更好的组织Web应用的内容，而且执行效率比CGI还更高。之后96年出现的ASP和98年出现的JSP本质上也都可以看成是一种支持某种脚本语言编程（分别是VB和Java）的模版引擎。96年W3C发布了CSS1.0规范。CSS允许开发者用外联的样式表来取代难以维护的内嵌样式，而不需要逐个去修改HTML元素，这让HTML页面更加容易创建和维护。此时，有了这些脚本语言，搭配上后端的数据库技术，Web更是开始大杀四方了，像电子商务这样的应用系统也可以通过Web技术来构建。Web已经从一个静态资源分享媒介真正变为了一个分布式的计算平台了。反过来看，你也应该知道，不是只有当今这些流行脚本语言可以写Web应用，C语言一样可以做这件事情。前面举的搜索引擎通过C语言来获取数据和渲染Web页面的例子在追求极致访问速度的互联网公司是非常常见的，但是脚本语言在开发效率上更胜一筹。
+*** Java的脚本语言-JSP
+JSP：JavaServer Pages 简单点说，就是可以在html中写Java代码。还是先从例子中大概了解下JSP：
+还是上面表单处理的例子。表单的html代码就不展示了，我们直接模拟GET请求，即在浏览器中输入地址：http://localhost:8080/testjsp/main.jsp?name=菜鸟教程&url=http://www.runoob.com 很明显，这个URL的关键是main.jsp。这个文件的内容是啥呢？
+#+BEGIN_SRC xml
+  <%@ page language="java" contentType="text/html; charset=UTF-8"
+  pageEncoding="UTF-8"%>
+  <%@ page import="java.io.*,java.util.*" %>
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+        <title>菜鸟教程(runoob.com)</title>
+      </head>
+      <body>
+        <h1>使用 GET 方法读取数据</h1>
+        <ul>
+          <li><p><b>站点名:</b>
+          <%= request.getParameter("name")%>
+          </p></li>
+          <li><p><b>网址:</b>
+          <%= request.getParameter("url")%>
+          </p></li>
+        </ul>
+      </body>
+    </html>
+#+END_SRC
+对比之前纯Servlet的例子，明显可读性强了很多。在html代码中插入Java代码。java代码被<% %>所包围。<%= request.getParameter("name")%>表示获取请求参数name的值，<%= request.getParameter("url")%>表示获取请求参数url的值。
+*** JSP是如何工作的？
+1. 就像其他普通的网页一样，您的浏览器发送一个HTTP请求给服务器。
+2. Web服务器识别出这是一个对JSP网页的请求，并且将该请求传递给JSP引擎（tomcat的jsp引擎是Jasper）。通过使用URL或者.jsp文件来完成。
+3. JSP引擎从磁盘中载入JSP文件，然后将它们转化为servlet。这种转化只是简单地将所有模板文本改用println()语句，并且将所有的JSP元素转化成Java代码。
+4. JSP引擎将servlet编译成可执行类，并且将原始请求传递给servlet引擎。
+5. Web服务器的某组件将会调用servlet引擎，然后载入并执行servlet类。在执行过程中，servlet产生HTML格式的输出并将其内嵌于HTTP response中上交给Web服务器。
+6. Web服务器以静态HTML网页的形式将HTTP response返回到您的浏览器中。
+7. 最终，Web浏览器处理HTTP response中动态产生的HTML网页，就好像在处理静态网页一样。
+*** JSP的痛点
+在HTML代码中写Java代码，方便了前端人员，但是苦了后端人员。因此，单纯使用JSP，开发效率依旧不高。后来，有牛人发现，Servlet天生非常适合逻辑处理(因为主要是Java代码)，而JSP非常适合页面展示(因为主要是html代码)，那么在结合Servlet和JSP各自的优缺点后，诞生了Web开发中最常用和最重要的架构设计模式：MVC。
+** MVC设计模式
+MVC模式（Model-View-Controller）是软件工程中的一种软件架构模式，把软件系统分为三个基本部分：模型（Model）、视图（View）和控制器（Controller）。对应到web开发中：
+- Controller 对应 Servlet，负责对请求进行处理
+- View 对应 脚本语言（JSP之类），负责展示界面
+- Model 对应 Bean，负责数据处理
+简而言之，请求发来后，会首先经过Controller层处理，需要返回的结果封装成对象传递给JSP，然后JSP负责取出数据展示就够了。这样，后端开发人员只负责编写Servlet，前端人员负责JSP，极大提升了开发效率。
+#+BEGIN_SRC java
+  @WebServlet("/userPosts")
+  public class UserPostController extends HttpServlet {
+
+      private static final long serialVersionUID = -4208401453412759851L;
+
+      @Override
+      protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+          String username = req.getParameter("username");
+          User user = Data.getByUsername(username);
+          List<Post> posts = Data.getPostByUser(user);
+
+          req.setAttribute("posts", posts);
+          req.setAttribute("user", user);
+          RequestDispatcher dispatcher = req.getRequestDispatcher("/templates/userPost.jsp");
+          dispatcher.forward(req, resp);
+      }
+  }
+#+END_SRC
+像上面这段代码，UserPostController就是一个Servlet，负责逻辑处理。需要返回的数据封装到HttpServletRequest对象中，传递给jsp页面。而负责展示的就是/templates/userPost.jsp这个jsp文件。
+** 框架横飞的年代
+有了Servlet和JSP，相当于有了武器。有了MVC，相当于有了战术。但是武器和战术之间还缺少一层，就是具体实施者。实践证明，单纯使用Servlet、JSP和MVC开发，依然会面临诸多的问题。而程序员普遍存在一种特质，就是懒。因为懒，所以才想着能有更简单的解决办法。因为懒，针对一些通用问题，才会想出通用解决方法。这时候，为了解放劳动力，一些开源框架营运而出。这些框架的目的只有一个：让开发简单，简单，更简单。提到Java Web框架，就不得不提几乎所有开发者都知道的三大框架：SSH（Struts + Spring + Hibernate）。由于ssh实在泰国庞大，会在后面单独分析。

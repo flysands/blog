@@ -1,0 +1,106 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: hexo
+#+JEKYLL_TAGS: hexo emacs
+#+JEKYLL_COMMENTS: true
+#+TITLE: 迁移博客到阿里云
+** 前言
+之前的博客一直搭建 github 上。由于访问速度慢，甚至访问失败等原因。所以决定把博客系统迁移到 vps 上。刚好今天购买了三年的阿里 ecs 服务器，趁热打铁先买域名，然后迁移所有文章（可惜只有十来篇）。虽然文章存放地点由 github 变到了 vps。但是写博客的工作流没有改变。还是用 emacs 的 org-mode 编写原稿，然后用 oct-octopress 把 org 格式的原稿转换成 html 格式。之后再经过 hexo 加工，配上主题。最后由 hexo deploy 组件推送到 git 仓库。本篇文章记录了整个迁移过程，给想用 vps 和 hexo 搭建博客服务器的同学提供参考。
+** 准备工作
+*** 实现原理
+在 vps 上搭建 hexo 其实和在 gitHub 上面没有多大区别，同样是在本地编辑文本，然后使用 git 远程部署到 git 仓库。只不过在 vps 上面需要配置 git hooks 将博客文件自动 push 到 web 根目录。
+*** 开放 *80* 端口
+本文使用阿里云 vps，需要在安全组中添加规则，才能开放指定端口。
+*** 本地安装
+1. 安装 git
+2. 安装 node.js
+3. 安装 hexo
+*** 修改 deploy 参数
+修改 deploy 参数，指定远程仓库地址为 vps。
+#+BEGIN_SRC shell
+  deploy:
+  type: git
+    repository: git@47.98.173.178:hexo.git
+    branch: master
+#+END_SRC
+** VPS配置
+*** 新建 git 用户
+#+BEGIN_SRC shell
+  adduser git
+  passwd git
+#+END_SRC
+*** 上传 SSH 公钥
+这里为了方便起见同时避免出错，使用 ssh-copy-id，在本地执行 ssh-copy-id 命令。
+#+BEGIN_SRC shell
+  ssh-copy-id -i ~/.ssh/id_rsa.pub git@服务器ip地址
+#+END_SRC
+*** 安装 git
+#+BEGIN_SRC shell
+  yum install git
+#+END_SRC
+*** 安装 nginx
+#+BEGIN_SRC shell
+  yum install nginx
+#+END_SRC
+*** 配置 git 仓库
+#+BEGIN_SRC shell
+  server {
+      listen  80 ;
+      root /var/www/hexo;
+      server_name www.shibaking.com;
+      access_log  /var/log/nginx/hexo_access.log;
+      error_log   /var/log/nginx/hexo_error.log;
+      error_page 404 =  /404.html;
+      location ~* ^.+\.(ico|gif|jpg|jpeg|png)$ {
+          root /var/www/hexo;
+          access_log   off;
+          expires      1d;
+      }
+      location ~* ^.+\.(css|js|txt|xml|swf|wav)$ {
+          root /var/www/hexo;
+          access_log   off;
+          expires      10m;
+      }
+      location / {
+          root /var/www/hexo;
+          if (-f $request_filename) {
+                 rewrite ^/(.*)$  /$1 break;
+             }
+      }
+      location /nginx_status {
+          stub_status on;
+          access_log off;
+      }
+  }
+#+END_SRC
+***  创建网站目录
+#+BEGIN_SRC shell
+  cd /var/www
+  mkdir hexo
+  chown git:git -R /var/www/hexo
+#+END_SRC
+*** 配置 Git Hooks
+编辑 ~/home/git/hexo.git/hooks 下的 post-receive 文件。
+#+BEGIN_SRC shell
+  #!/bin/bash
+  GIT_REPO=/home/git/hexo.git
+  TMP_GIT_CLONE=/tmp/hexo
+  PUBLIC_WWW=/var/www/hexo
+  rm -rf ${TMP_GIT_CLONE}
+  git clone $GIT_REPO $TMP_GIT_CLONE
+  rm -rf ${PUBLIC_WWW}/*
+  cp -rf ${TMP_GIT_CLONE}/* ${PUBLIC_WWW}
+#+END_SRC
+然后给 post-receive 文件添加可执行权限。
+#+BEGIN_SRC shell
+  chmod +x post-receive
+#+END_SRC
+*** 重启 nginx
+#+BEGIN_SRC shell
+  service nginx restart
+#+END_SRC
+** 发布文章
+在本地编辑好文章之后使用 hexo g 生成静态网页，hexo s 在本地预览，hexo d 提交到服务器。

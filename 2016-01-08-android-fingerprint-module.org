@@ -1,0 +1,216 @@
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android
+#+JEKYLL_COMMENTS: true
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil
+#+TITLE: android指纹模块
+
+** android指纹模块流程图
+
+#+RESULTS:
+[[file:../images/android_finger_module_seq.png]]
+
++ Tee : trusted excution env
+  
+** android setting指纹模块入口
+主要涉及到一下几个文件
++ packages/apps/Settings/src/com/android/settings/SecuritySettings.java
++ frameworks/base/core/java/android/hardware/fingerprint/FingerprintManager.java 
++ frameworks/base/services/core/java/com/android/server/fingerprint/FingerprintService.java
++ frameworks/base/core/java/android/hardware/fingerprint/IFingerprintDaemon.aidl
++ system/core/fingerprintd/IFingerprintDaemon.cpp
++ system/core/fingerprintd/FingerprintDaemonProxy.cpp
++ hardware/libhardware/hardware.c 
++ hardware/libhardware/modules/fingerprint/fingerprint.c
+
+
+#+RESULTS:
+[[file:../images/android_finger_setting_load.png]]
+
+具体流程如下:
+
+1. Settings在做页面展示的时候会调用maybeAddFingerprintPreference函数判断是否
+   添加fingerprint preference.
+2. maybeAddFingerprintPreference内部调用FingerprintManager的isHardwareDetected
+   函数.
+3. FingerprintManager调用FingerprintService中的isHardwareDetected函数. 
+4. FingerprintService中的isHardwareDetected函数首先进行权限检查,然后如果
+   mDeviceHalId等于0返回false,表示没有检测到指纹相关的硬件.否则返回ture.
+   mDeviceHalId为底层openHal的返回值.
+5. openHal函数的实现非常简单,代码片段如下.
+   #+BEGIN_SRC c++
+     int64_t FingerprintDaemonProxy::openHal() {
+       ALOG(LOG_VERBOSE, LOG_TAG, "nativeOpenHal()\n");
+       int err;
+       const hw_module_t *hw_module = NULL;
+       if (0 != (err = hw_get_module(FINGERPRINT_HARDWARE_MODULE_ID, &hw_module))) {
+         ALOGE("Can't open fingerprint HW Module, error: %d", err);
+         return 0;
+       }
+       if (NULL == hw_module) {
+         ALOGE("No valid fingerprint module");
+         return 0;
+       }
+
+       mModule = reinterpret_cast<const fingerprint_module_t *>(hw_module);
+
+       if (mModule->common.methods->open == NULL) {
+         ALOGE("No valid open method");
+         return 0;
+       }
+
+       hw_device_t *device = NULL;
+
+       if (0 != (err = mModule->common.methods->open(hw_module, NULL, &device))) {
+         ALOGE("Can't open fingerprint methods, error: %d", err);
+         return 0;
+       }
+
+       if (kVersion != device->version) {
+         ALOGE("Wrong fp version. Expected %d, got %d", kVersion, device->version);
+         // return 0; // FIXME
+       }
+
+       mDevice = reinterpret_cast<fingerprint_device_t *>(device);
+       err = mDevice->set_notify(mDevice, hal_notify_callback);
+       if (err < 0) {
+         ALOGE("Failed in call to set_notify(), err=%d", err);
+         return 0;
+       }
+
+       // Sanity check - remove
+       if (mDevice->notify != hal_notify_callback) {
+         ALOGE("NOTIFY not set properly: %p != %p", mDevice->notify,
+               hal_notify_callback);
+       }
+
+       ALOG(LOG_VERBOSE, LOG_TAG, "fingerprint HAL successfully initialized");
+       return reinterpret_cast<int64_t>(mDevice); // This is just a handle
+     }
+   #+END_SRC
+   openHal函数主要实现以下3个功能
+
+   - 调用hw_get_module加载对应的库文件
+
+   - 调用module结构体的common.methods->open指向的函数
+     module结构体定义如下
+     #+BEGIN_SRC c++
+       static struct hw_module_methods_t fingerprint_module_methods = {
+           .open = fingerprint_open,
+       };
+
+       fingerprint_module_t HAL_MODULE_INFO_SYM = {
+           .common =
+               {
+                   .tag = HARDWARE_MODULE_TAG,
+                   .module_api_version = FINGERPRINT_MODULE_API_VERSION_2_0,
+                   .hal_api_version = HARDWARE_HAL_API_VERSION,
+                   .id = FINGERPRINT_HARDWARE_MODULE_ID,
+                   .name = "Emulator Fingerprint HAL",
+                   .author = "The Android Open Source Project",
+                   .methods = &fingerprint_module_methods,
+               },
+       };
+     #+END_SRC
+     fingerprint_open函数定义如下
+     #+BEGIN_SRC c++
+       static int fingerprint_open(const hw_module_t *module, const char __unused *id,
+                                   hw_device_t **device) {
+         if (device == NULL) {
+           ALOGE("NULL device on open");
+           return -EINVAL;
+         }
+
+         fingerprint_device_t *dev = malloc(sizeof(fingerprint_device_t));
+         memset(dev, 0, sizeof(fingerprint_device_t));
+
+         dev->common.tag = HARDWARE_DEVICE_TAG;
+         dev->common.version = FINGERPRINT_MODULE_API_VERSION_2_0;
+         dev->common.module = (struct hw_module_t *)module;
+         dev->common.close = fingerprint_close;
+
+         dev->pre_enroll = fingerprint_pre_enroll;
+         dev->enroll = fingerprint_enroll;
+         dev->get_authenticator_id = fingerprint_get_auth_id;
+         dev->cancel = fingerprint_cancel;
+         dev->remove = fingerprint_remove;
+         dev->set_active_group = fingerprint_set_active_group;
+         dev->authenticate = fingerprint_authenticate;
+         dev->set_notify = set_notify_callback;
+         dev->notify = NULL;
+
+         ,*device = (hw_device_t *)dev;
+         return 0;
+       }
+     #+END_SRC
+
+   - 调用set_notify设置回调函数
+6. hw_get_module函数主要实现底层so库加载
+   具体加载过程可以参考[[http://www.embedu.org/Column/Column733.htm][android hw_get_module 分析]]
+7. hw_get_module内部调用hw_get_module_by_class实现加载过程
+  #+BEGIN_SRC c++
+    /** Base path of the hal modules */
+    #if defined(__LP64__)
+    #define HAL_LIBRARY_PATH1 "/system/lib64/hw"
+    #define HAL_LIBRARY_PATH2 "/vendor/lib64/hw"
+    #else
+    #define HAL_LIBRARY_PATH1 "/system/lib/hw"
+    #define HAL_LIBRARY_PATH2 "/vendor/lib/hw"
+    #endif
+
+    /**
+     ,* There are a set of variant filename for modules. The form of the filename
+     ,* is "<MODULE_ID>.variant.so" so for the led module the Dream variants
+     ,* of base "ro.product.board", "ro.board.platform" and "ro.arch" would be:
+     ,*
+     ,* led.trout.so
+     ,* led.msm7k.so
+     ,* led.ARMV6.so
+     ,* led.default.so
+     ,*/
+
+    static const char *variant_keys[] = {
+        "ro.hardware", /* This goes first so that it can pick up a different
+                          file on the emulator. */
+        "ro.product.board",
+        "ro.board.platform",
+        "ro.arch"};
+  #+END_SRC 
+  hw_get_module_by_class根据优先级搜索对应的so文件,文件名主要由两部分构成.
+  第一部分为模块名,第二部分为类型.其中模块名固定,第二部分优先级顺序为:
+  硬件 > 产品 > cpu > arch > default.
+
+  如果以上函数都执行成功,那么fingerprint module则加载完成.
+
+** nexus 6p无法启用finger问题原因
+1. 清华镜像的源码选择angler product,编译出来的system.img里没有fingerprintd可执行文件.
+2. 没有加载fingerprint module对应的库文件.
+3. hardware so库加载顺序有误.
+4. 解决方法
+   以移植goldfish为例
+   1. 拷贝device/generic/goldfish/fingerprint目录到device/huawei/angler目录下
+   2. 修改device/huawei/angler/device.mk文件,添加fingerprint模块
+      #+BEGIN_SRC makefile
+        #Fingerprint
+        PRODUCT_PACKAGES += \
+                         fingerprintd \
+                         fingerprint.msm8994
+      #+END_SRC
+   3. 修改模块加载顺序
+      由于源码编译出来的image文件,在system/vendor/lib64下含有fingerprint.angler.so.
+      所以在hw_get_module会加载fingerprint.angler.so而忽略fingerprint.msm8994.so.
+      所以修改hardware.c文件中的默认搜索顺序,把ro.board.platform放到第一即可.
+      #+BEGIN_SRC c++
+        static const char *variant_keys[] = {
+            "ro.board.platform",
+            "ro.hardware", /* This goes first so that it can pick up a different
+                              file on the emulator. */
+            "ro.product.board",
+            // "ro.board.platform",
+            "ro.arch"};
+      #+END_SRC
+   
+

@@ -1,0 +1,129 @@
+#+JEKYLL_CATEGORIES: cichlid
+#+JEKYLL_TAGS: cichlid pet
+#+JEKYLL_COMMENTS: true
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil
+#+TITLE: malawi-cichlids
+
+| 学名                                   | 中文名     | 状况 |  尺寸 | 价格 | 公母 | 品系 | 数目 |
+|----------------------------------------+------------+------+-------+------+------+------+------|
+| Aristochromis christyi                 | 鸟嘴       | 发色 | 17-20 |  200 | 公   | 野生 |    1 |
+| Hemitaeniochromis urotaenia            | 巨人马面   | 发色 | 13-15 |  200 | 公   | 野生 |    1 |
+| Aulonocara steveni Chiwindi            | 蓝黎明     | 阵亡 | 10-12 |  200 | 公   | 野生 |    1 |
+| Aulonocara steveni Chiwindi            | 蓝黎明     | 阵亡 |  8-10 |   60 | 公   | 人工 |    1 |
+| Aulonocara steveni Chiwindi            | 蓝黎明     | 发色 |  8-10 |   80 | 公   | 人工 |    1 |
+| Aulonocara baenschi                    | 金松鼠     | 发色 | 10-12 |   70 | 公   | 人工 |    1 |
+| Copadichromis borleyi "Mbenji"         | 波里尔     | 发色 | 10-12 |  200 | 公   | 野生 |    1 |
+| Copadichromis trimaculatus             | 血艳红     | 发色 |  8-10 |   35 | 公   | 人工 |    1 |
+| Chilotilapia rhoadesii                 | 帝王鲷     | 发色 |  8-10 |   50 | 公   | 人工 |    1 |
+| Buccochromis lepturus                  | 绿马头     | 良好 |  8-10 |  100 | 公   | 人工 |    1 |
+| Buccochromis spectabilis               | 新马头     | 出售 | 13-15 |  520 | 公   | 野生 |    1 |
+| Buccochromis spectabilis               | 新马头     | 良好 | 11-13 |   50 | 公   | 人工 |    1 |
+| Buccochromis spectabilis               | 新马头     | 良好 |  8-10 |   80 | 公   | 人工 |    1 |
+| Buccochromis nototaenia                | 金火令     | 良好 | 10-13 |  100 | 公   | 人工 |    1 |
+| Buccochromis nototaenia                | 金火令     | 阵亡 |   8-9 |   70 | 公   | 人工 |    1 |
+| Champsochromis caeruleus               | 酷斯拉     | 阵亡 | 16-18 |  450 | 公   | 野生 |    1 |
+| Copadichromis azureus                  | 金属蓝     | 良好 | 10-13 |   60 | 公   | 人工 |    1 |
+| Ctenopharynx nitidus                   | 金三角     | 良好 | 13-15 |  400 | 公   | 野生 |    1 |
+| Dimidiochromis compressiceps           | 蓝马面     | 阵亡 | 15-17 |  100 | 公   | 人工 |    1 |
+| Exochochromis anagenys                 | 金鹰       | 阵亡 |   6-8 |   80 | 公   | 人工 |    1 |
+| Fossorochromis rostratus               | 雪花豹     | 良好 | 12-13 |  200 | 母   | 野生 |    1 |
+| Fossorochromis rostratus               | 雪花豹     | 发色 | 15-17 |  330 | 公   | 野生 |    1 |
+| Lethrinops Micrentodon Makokola        | 太阳珍珠   | 阵亡 |   5-7 |   60 | 公   | 人工 |    1 |
+| Hemitilapia oxyrhyncha                 | 鸭嘴倒三角 | 阵亡 | 13-15 |  450 | 公   | 野生 |    1 |
+| Mylochromis ensatus                    | 1280火箭   | 阵亡 | 10-12 |  288 | 公   | 野生 |    1 |
+| Mylochromis melanotaenia               | 金斜间     | 阵亡 |   7-9 |  200 | 公   | 野生 |    1 |
+| Otopharynx heterodon "Tanzanie"        | 大粒墨     | 完美 | 12-13 |  288 | 公   | 野生 |    1 |
+| Otopharynx lithobates                  | 金头蓝孔雀 | 阵亡 |   8-9 |  120 | 公   | 德系 |    1 |
+| Protomelas fenestratus "Magunga"       | 史提芬     | 阵亡 | 10-12 |  260 | 公   | 野生 |    1 |
+| Protomelas taeniolatus                 | 埃及艳后   | 阵亡 | 13-15 |  100 | 公   | 人工 |    1 |
+| Protomelas taeniolatus                 | 埃及艳后   | 良好 | 13-15 |    0 | 公   | 人工 |    1 |
+| Placidochromis phenochilus Mdoka white | 白嘴蓝宝石 | 良好 | 13-15 |  150 | 公   | 人工 |    1 |
+| Placidochromis phenochilus Mdoka white | 白嘴蓝宝石 | 送人 | 13-15 |  150 | 公   | 人工 |    1 |
+| Placidochromis phenochilus             | 蓝宝石     | 良好 |   8-9 |   60 | 公   | 人工 |    1 |
+| Tyrannochromis macrostoma              | 大口鲷     | 良好 | 15-17 |  300 | 公   | 野生 |    1 |
+| Tyrannochromis macrostoma "Likoma"     | 大口鲷     | 发色 | 20-22 |    0 | 公   | 野生 |    1 |
+| Stigmatochromis modestus               | 冇得死     | 发色 | 12-15 |  400 | 公   | 野生 |    1 |
+| Stigmatochromis woodi                  | 乌帝鹰     | 阵亡 | 13-15 |  240 | 公   | 野生 |    1 |
+| Nimbochromis polystigma                | 芝麻斑     | 良好 | 13-15 |  400 | 公   | 野生 |    1 |
+|                                        |            |      |       | 7021 |      |      |   38 |
+
+** Buccochromis
+
+*** Buccochromis spectabilis (新马头)
+[[file:../images/IMG_5384.JPG]]
+[[file:../images/IMG_5345.JPG]]
+
+** Champsochromis
+
+*** Champsochromis caeruleus (酷斯拉)
+[[file:../images/IMG_5360.JPG]]
+[[file:../images/IMG_5362.JPG]]
+[[file:../images/IMG_5353.JPG]]
+[[file:../images/IMG_5388.JPG]]
+[[file:../images/IMG_5421.JPG]]
+
+** Ctenopharynx
+
+*** Ctenopharynx nitidus (金三角)
+[[file:../images/IMG_5356.JPG]]
+
+** Dimidiochromis
+
+*** Dimidiochromis compressiceps (蓝马面)
+[[file:../images/IMG_5407.JPG]]
+
+** Fossorochromis
+
+*** Fossorochromis rostratus (雪花豹)
+
+** Mylochromis
+
+*** Mylochromis ensatus (1280火箭)
+[[file:../images/IMG_5419.JPG]]
+[[file:../images/IMG_5346.JPG]]
+
+*** Mylochromis melanotaenia (金斜间)
+
+** Otopharynx
+
+*** Otopharynx heterodon "Tanzanie" (大粒墨)
+[[file:../images/IMG_5416.JPG]]
+[[file:../images/IMG_5351.JPG]]
+
+*** Otopharynx lithobates (金头蓝孔雀)
+
+** Protomelas
+
+*** Protomelas fenestratus "Magunga" (史提芬)
+[[file:../images/IMG_5401.JPG]]
+
+*** Protomelas taeniolatus (埃及艳后)
+
+** Placidochromis
+
+*** Placidochromis phenochilus (白嘴蓝宝石)
+[[file:../images/IMG_5415.JPG]]
+
+** Tyrannochromis
+
+*** Tyrannochromis macrostoma (大口鲷)
+[[file:../images/IMG_5420.JPG]]
+[[file:../images/IMG_5364.JPG]]
+
+** Stigmatochromis
+
+*** Stigmatochromis woodi (乌帝鹰)
+** Nimbochromis
+
+*** Nimbochromis polystigma (芝麻斑)
+** All
+
+** Reference
+
+- [[http://www.onzemalawicichliden.eu/Bestanden%2520vissendatabase%2520eng/vissendatabase%2520eng.html][onzemalawicichliden]]
+- [[http://www.malawi-dream.info/][malawi-info]]
+- [[http://malawicichlids.com][malawicichlids]]

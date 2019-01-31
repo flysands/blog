@@ -1,0 +1,180 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: algorithm
+#+JEKYLL_TAGS: algorithm
+#+JEKYLL_COMMENTS: true
+#+TITLE: 九宫格问题
+** DONE 九宫格问题(幻方)                                 :@office:ALGORITHM:
+CLOSED: [2016-09-20 Tue 10:39] DEADLINE: <2016-09-14 Wed 16:00> SCHEDULED: <2016-09-14 Wed 14:00>
+:PROPERTIES:
+:Effort:   2:00
+:END:
+:LOGBOOK: 
+CLOCK: [2016-09-14 Wed 14:30]--[2016-09-14 Wed 14:55] =>  0:25
+:END:
+参考百度百科,幻方法则
+1. 奇阶幻方(Loubere法)([[http://blog.sina.com.cn/s/blog_639b95e90100i6fh.html][link]])
+   奇数阶幻方最经典的填法是罗伯特法(也有人称之为楼梯法).填写方法是这样： 
+   把1(或最小的数)放在第一行正中； 按以下规律排列剩下的n*n-1个数： 
+   1. 每一个数放在前一个数的右上一格； 
+   2. 如果这个数所要放的格已经超出了顶行那么就把它放在底行,仍然要放在右一列； 
+   3. 如果这个数所要放的格已经超出了最右列那么就把它放在最左列,仍然要放在上一行； 
+   4. 如果这个数所要放的格已经超出了顶行且超出了最右列,那么就把它放在前一个数的下一行同一列的格内； 
+   5. 如果这个数所要放的格已经有数填入,处理方法同(4). 
+2. 单偶阶幻方(Strachey法)([[http://blog.sina.com.cn/s/blog_639b95e90100i6h4.html][link]])
+    1. 计算 m = (n - 2) / 4
+    2. 分割成4个奇幻方,左上为A,右下为B,右上为C,左下为D
+    3. 使用罗伯法分别填充A,B,C,D
+    4. 在A阵中取左侧m列与D阵对应小格对调,在C阵中取右侧m-1列与B阵对应小格对调(m-1为零不需要对调)
+    5. 最后在A阵中间行取中心格与左侧一格与D阵对应小格对调
+3. 双偶阶幻方(Spring法)([[http://chenxuebiao3.blog.163.com/blog/static/274911182011111911429621/][link]])
+   1. 先把数字按顺序填.然后,按n*n把它分割成m*m个小方阵.
+   2. 每个小方阵对角线上的数字,换成和它互补的数.
+4. 代码
+   #+BEGIN_SRC python
+       def loubere(n, index=1):
+           """ 奇幻方楼梯法 """
+           """ 1居上行正中央 依次斜填切莫忘 上出框界往下写 右出框时左边放 重复便在下格填 出角重复一个样 """
+           half = n / 2
+           matrix = [[0 for i in range(n)] for i in range(n)]
+         if n % 2 == 1:
+             formatprint(matrix)
+             matrix[0][half] = index
+             i = 0
+             j = half
+             formatprint(matrix)
+             for a in range(index + 1, n * n + index):
+                 j = j + 1
+                 i = i - 1
+                 if i in range(0, n) and j >= n:
+                     j = 0
+                 if i < 0 and j in range(0, n):
+                     i = n - 1
+                 if i < 0 and j >= n:
+                     i = i + 2
+                     j = j - 1
+                 if matrix[i][j] != 0:
+                     i = i + 2
+                     j = j - 1
+                     matrix[i][j] = a
+                     formatprint(matrix)
+         else:
+             print "input one odd number"
+         return matrix
+
+
+     def spring(n):
+         """ spring法生成双偶阶幻方 """
+         """ 1. 先把数字按顺序填.然后,按n*n把它分割成m*m个小方阵. """
+         """ 2. 每个小方阵对角线上的数字,换成和它互补的数. """
+         matrix = [[x + y * n + 1 for x in range(n)] for y in range(n)]
+         if n % 4 == 0:
+             formatprint(matrix)
+             m = n / 2
+             sum = n * n + 1
+             # 对角线条件
+             # 行下标 - 列下标 % m = 0 或者 行下标 + 列下标 % m = m - 1
+             for i in range(n):
+                 for j in range(n):
+                     if (i - j) % m == 0 or (i + j) % m == m - 1:
+                         matrix[i][j] = sum - matrix[i][j]
+                         formatprint(matrix)
+                         formatprint(matrix)
+         else:
+             print "input x = n * 4"
+         return matrix
+
+
+     def strachey(n):
+         """ strachey法生成单偶幻方 """
+         """ 1. 计算 m = (n - 2) / 4 """
+         """ 2. 分割成4个奇幻方,左上为A,右下为B,右上为C,左下为D """
+         """ 3. 使用罗伯法分别填充A,B,C,D """
+         """ 4. 在A阵中取左侧m列与D阵对应小格对调,中间行取m-1列.在C阵中取右侧m-1列与B阵对应小格对调(m-1为零不需要对调) """
+         """ 5. 最后在A阵中间行取中心格与左侧一格与D阵对应小格对调 """
+         matrix = [[0 for i in range(n)] for i in range(n)]
+         if n % 2 == 0 and not n % 4 == 0:
+             m = n / 4
+             half = n / 2
+             A = loubere(half)
+             B = loubere(half, half * half + 1)
+             C = loubere(half, half * half * 2 + 1)
+             D = loubere(half, half * half * 3 + 1)
+             for i in range(half):
+                 for j in range(half):
+                     if i == j and i == half / 2:
+                         tmp = A[i][j]
+                         A[i][j] = D[i][j]
+                         D[i][j] = tmp
+                     if j < m:
+                         tmp = A[i][j]
+                         A[i][j] = D[i][j]
+                         D[i][j] = tmp
+                         """ 中间行只换m-1列,所以需要换回去 """
+                         if i == half / 2 and j == m - 1:
+                             tmp = A[i][j]
+                             A[i][j] = D[i][j]
+                             D[i][j] = tmp
+                         if j < m - 1:
+                             tmp = C[i][half - 1 - j]
+                             C[i][half - 1 - j] = B[i][half - 1 - j]
+                             B[i][half - 1 - j] = tmp
+             for i in range(n):
+                 for j in range(n):
+                     if i < half and j < half:
+                         matrix[i][j] = A[i][j]
+                     elif i < half and j >= half:
+                         matrix[i][j] = C[i - half][j - half]
+                     elif i >= half and j < half:
+                         matrix[i][j] = D[i - half][j]
+                     else:
+                         matrix[i][j] = B[i - half][j - half]
+                         formatprint(matrix)
+         else:
+             print "input x = 4m + 2"
+         return matrix
+
+
+     def formatprint(array):
+         """ 格式化输出 """
+         print "--------------------------"
+         for i in array:
+             print i
+             print "--------------------------"
+
+
+     def check(matrix):
+         """ 幻方检查 """
+         sum = 0
+         ret = True
+         matrix_lenth = len(matrix)
+         for i in range(matrix_lenth):
+             for j in range(matrix_lenth):
+                 sum += matrix[i][j]
+                 sum = sum / matrix_lenth
+         for i in range(matrix_lenth):
+             row = 0
+             col = 0
+             for j in range(matrix_lenth):
+                 row += matrix[i][j]
+                 col += matrix[j][i]
+             if not row == sum or not col == sum:
+                 ret = False
+                 break
+             line1 = 0
+             line2 = 0
+         for i in range(matrix_lenth):
+             line1 += matrix[i][i]
+             line2 += matrix[i][matrix_lenth - i - 1]
+         if not line1 == sum or not line2 == sum:
+             ret = False
+         return ret
+
+
+     print check(loubere(3))
+     print check(spring(8))
+     print check(strachey(10))
+   #+END_SRC

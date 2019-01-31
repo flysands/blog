@@ -1,0 +1,96 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: ledger emcas
+#+JEKYLL_COMMENTS: true
+#+TITLE: 使用emcas+ledger记账
+*** 复式记账法
+复式簿记是一种把每笔交易都记录到复数个账户中的簿记方法。举个例子，想像你面前有两个桶，分别是「资产」（Assets）和「费用」（Expenses），左边的桶里装满了豆子，右边的桶是空的。你用 1000 元听了一场演唱会，为了记录这笔费用，你把 1000 粒豆子从 Assets 桶里转移到了 Expenses 桶里，代表你的资产减少了 1000 元，而你花在演唱会上的费用增加了 1000 元，在这个过程中，豆子的总量没有变化（资产减少的豆子与费用增加的豆子数量一致），这便是最简单的复式簿记。
+*** 分配
+- 资产 Assets - 现金、银行存款、有价证券等；
+- 负债 Liabilities - 信用卡、房贷、车贷等；
+- 收入 Income - 工资、奖金等；
+- 费用 Expenses - 外出就餐、购物、旅行等；
+- 权益 Equity - 用于「存放」某个时间段开始前已有的豆子；
+
+*复式记账法* 有两个入口，并且两个入口相加等于零。借和贷相加等于零。借和贷很好理解，打个比方你向XX借了5000块钱，你的资产增加了5000，你的负债就要加上-5000，相当于从你的负债桶里贷出5000到你的资产桶。另外举一个例子，你买衣服花了2000块钱，这笔交易可以理解成向资产桶里贷出2000块钱，借给你的费用桶，所以你的费用桶增加2000。只需要记住 *借增贷减* 即可。
+
+- 借贷记账
+
+  想像成一个装着你一生（过去和未来）所有劳动成果的桶，每次你的收入都是从桶里贷出来。打个比方你发了工资10000块，你的资产桶增加了10000。这10000是收入桶贷给你的。所以资产桶+10000，相应的收入桶-10000。
+
+恒等式： 
+1. *(Income + Liabilities) + (Assets + Expenses) + Equity = 0* 
+2. *每笔交易在不同账户的数字加起来和为 0 是复式簿记的重要特性和原则，也是用来检验账目正确性的重要依据。*
+*** 使用emacs和ledger记账
+**** 开户
+除开startup代码块之外，另外新建income，liabilities，expenses，assets四个代码块。分别用来记录收入，负债，消费，资产。
+#+name: startup
+#+BEGIN_SRC ledger :noweb yes
+  2017/12/27 * Opening Balance
+      Assets:招商银行                                            95198 CNY
+      Assets:微信钱包                                              239 CNY
+      Assets:现金                                                    3 CNY
+      Assets:支付宝                                                  2 CNY
+      Assets:外借                                                80000 CNY
+      Liabilities:花呗                                           -6526 CNY
+      Equity:初始平衡                                          -168916 CNY
+#+END_SRC
+**** 记账
+在expenses下记录我们的第一笔消费，比如花了两块钱买菜。相当于从Assets中贷出2元放到Expenses桶中。其中第二行的+2 CNY被省略掉了。
+#+name: expenses
+#+BEGIN_SRC ledger :noweb yes
+  2017/12/27 * 买菜
+      Assets:现金                                                   -2 CNY
+      Expenses:生活消费                                              
+#+END_SRC
+- 小技巧
+
+  在 org-mode 的 ledger 代码区， 按 *C-c '* , 可以快速进入一个临时的 ledger-mode buffer。在这个 ledger-mode buffer 中， 可以使用 ledger-mode 的键绑定：
+  - *M-m m a* （spacemacs）添加记录
+  - *SPC j =* (Spacemacs) 版面调整
+  - *, c* (Spacemacs) 提交修改并返回 org-mode buffer 
+**** 统计
+- 月度统计
+  
+  月度统计每个月的收支状况。
+  #+name: monthlyassetsregister
+  #+begin_src ledger :cmdline -M reg assets :noweb yes
+  <<income>>
+  <<expenses>>
+  #+end_src
+  *C-c C-c* 执行代码块，生成月度报告。
+  #+RESULTS: monthlyassetsregister
+  : 17-Dec-01 - 17-Dec-31           Assets:现金                  -2 CNY       -2 CNY
+
+- 总体统计
+
+  总体统计当前的财务状况。
+  #+name: balance
+  #+BEGIN_SRC ledger :cmdline bal :noweb yes
+  <<startup>>
+  <<income>>
+  <<expenses>>
+  <<liabilities>>
+  <<assets>>
+  #+END_SRC
+  *C-c C-c* 执行代码块，生成总览报告。满足恒等式。
+  #+RESULTS: balance
+  #+begin_example
+            175440 CNY  Assets
+             80000 CNY    外借
+               239 CNY    微信钱包
+             95198 CNY    招商银行
+                 2 CNY    支付宝
+                 1 CNY    现金
+           -168916 CNY  Equity:初始平衡
+                 2 CNY  Expenses:生活消费
+             -6526 CNY  Liabilities:花呗
+  --------------------
+                     0
+#+end_example
+
+ 

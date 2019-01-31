@@ -1,0 +1,36 @@
+#+JEKYLL_CATEGORIES: devops
+#+JEKYLL_TAGS: devops docker
+#+JEKYLL_COMMENTS: true
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+TITLE: Testbird ci 2.0
+** Testbird ci 2.0 流程图
+
+
+#+RESULTS:
+[[file:../images/testbird_ci_arch.png]]
+
+** 参与者
+1. TbCli
+   
+   testbird devops开发用于ci过程的项目代码.
+2. Gitlab
+
+   不多介绍.
+3. Jenkins
+
+   不多介绍.
+4. Registry
+   
+   testbird自建docker registry.
+5. Ansible
+   
+   运维发布工具.
+6. Kubernetes
+
+   容器编排工具.
+
+

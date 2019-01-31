@@ -1,0 +1,47 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: ui
+#+JEKYLL_COMMENTS: true
+#+TITLE: Android UI 库
+** android ui lib                                                  :PERSONAL:
+- ui库
+  1. [[https://github.com/yadav-rahul/TastyToast][TastyToast]]
+     炫酷的自定义toast.
+  2. [[https://github.com/yipianfengye/android-adDialog][AdDialog]]
+     自定义的广告dialog.
+  3. [[https://github.com/eoinfogarty/Onboarding][Onboarding]]
+     A beautiful way to introduce users to your app.
+  4. [[https://github.com/ybq/Android-SpinKit][Android-SpinKit]]
+     加载动画库,配备各种加载动画.
+  5. [[https://github.com/wuapnjie/StickerView][StickerView]]
+     A view which can add sticker and zoom,drag,delete it.
+  6. [[https://github.com/JeasonWong/SlackLoadingView][SlackLoadingView]]
+     Slack loading animation.
+  7. [[http:https://github.com/dinuscxj/RecyclerRefreshLayout][RecyclerRefreshLayout]]
+     A pull to refresh layout for android, the RecyclerRefreshLayout is based on the SwipeRefreshLayout.
+     support all the views, highly customizable, code simplicity, etc
+  8. [[https://github.com/rubensousa/ViewPagerCards][ViewPagerCards]]
+     ViewPager cards.
+  9. [[http://fresco-cn.org/docs/getting-started.html][Fresco]]
+     Facebook open source android picture lib.
+  10. [[https://github.com/Taishi-Y/InstagramLikeColorTransitionAndroid][InstagramLikeColorTransitionAndroid]]
+      How to create instagram like Gradient color transition in android.
+  11. [[https://github.com/mcxtzhang/AnimShopButton][AnimShopButton]]
+      A shopping cart button with a telescopic displacement rotation animation.
+  12. [[https://github.com/zhangke3016/ViewSpreadTranslationController][ViewSpreadTranslationController]]
+      View Spread TranslationController for Android.
+  13. [[https://github.com/zagum/Android-SwitchIcon][Android-SwitchIcon]]
+      Google launcher-style implementation of switch (enable/disable) icon.
+  14. [[https://github.com/LuckSiege/PictureSelector][PictureSelector]]
+      Android多图选择器 图片/视频 单选or多选,以及视频录制.
+  15. [[https://github.com/GrenderG/Toasty][Toasty]]
+      The usual Toast, but with steroids.
+  16. [[https://github.com/google/hover][Hover]]
+      A floating menu library for Android.
+- 工具库
+  1. [[https://github.com/makomori/Sharaku][Sharaku]]
+     Image filtering UI library like Instagram.

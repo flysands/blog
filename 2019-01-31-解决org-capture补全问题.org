@@ -1,0 +1,103 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: ledger org
+#+JEKYLL_COMMENTS: true
+#+TITLE: 为org-capture-templates添加补全
+1. org-capture-templates提供了 *%^{prompt)* 默认补全的功能， *|* 后紧跟默认值即可
+
+   这种方法有一个缺陷，需要提前定义ledger中的好各种账户类别。
+   #+BEGIN_SRC elisp
+     ("fi" "Income" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+      "\n\t%(org-read-date) * %^{Payee}\n\t\t\tAssets:%^{Account|招商银行|支付宝|微信钱包|现金|理财账户:朝朝盈|理财账户:微众银行}    %^{Amount} CNY\n\t\t\tIncome:%^{Income|工资|报销|私活|利息|房租|转账}")
+     ("fe" "Expenses" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+      "\n\t%(org-read-date) * %^{Payee}\n\t\t\tExpenses:%^{Expenses|宠物|生活消费:三餐|生活消费:水果|交通:打车费|电子设备|学习|住房|服饰:|请客|转账|请客|送礼}    %^{Amount} CNY\n\t\t\tAssets:%^{Account|招商银行|支付宝|微信钱包|现金|理财账户:朝朝盈|理财账户:微众银行}")
+     ("fl" "Liabilities" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+      "\n\t%(org-read-date) * %^{Payee}\n\t\t\tExpenses:%^{Account|宠物|生活消费:三餐|生活消费:水果|交通:打车费|电子设备|学习|住房|服饰:|请客|转账|请客|送礼}    %^{Amount} CNY\n\t\t\tLiabilities:%^{LAccount|花呗|借呗|白条}")
+     ("ft" "Transaction" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+      "\n\t%(org-read-date) * %^{Payee}\n\t\t\tAssets:%^{AccountIn|招商银行|支付宝|微信钱包|现金|理财账户:朝朝盈|理财账户:微众银行}    %^{Amount} CNY\n\t\t\tAssets:%^{AccountOut|招商银行|支付宝|微信钱包|现金|理财账户:朝朝盈|理财账户:微众银行}")
+   #+END_SRC
+2. 新的解决方案
+
+   先从ledger文件中提取所有的账户类别保存到固定文件中，使用org-capture中的 *%(EXP)* 模板展开，把结果替换到 *%^{prompt)* 的补全列表中。
+
+   - 提取列表
+     #+BEGIN_SRC python
+       # -*- coding:utf-8 -*-
+       import re
+
+
+       def extract_history_from_ledger_file(ledger_file_path):
+           """
+           从ledger文件中提取输入历史
+           """
+           match = r"(^Assets|Expense|Liabilities|Income)"
+           find = r"([A-Z]+[:\S]+)"
+           history = []
+           with open(ledger_file_path, 'r') as f:
+               content = f.readlines()
+               for i in content:
+                   if not re.match(match, i.strip()):
+                       continue
+                   result = re.findall(find, i.strip())
+                   if result:
+                       if result[0].decode("utf-8") not in history:
+                           history.append(result[0].decode("utf-8"))
+           with open("/Users/chenxuesong/.ledger/.Assets", 'w') as his:
+               for i in history:
+                   if i.startswith("Assets"):
+                       his.write(i.encode("utf-8"))
+                       his.write("\n")
+           with open("/Users/chenxuesong/.ledger/.Liabilities", 'w') as his:
+               for i in history:
+                   if i.startswith("Liabilities"):
+                       his.write(i.encode("utf-8"))
+                       his.write("\n")
+           with open("/Users/chenxuesong/.ledger/.Expense", 'w') as his:
+               for i in history:
+                   if i.startswith("Expense"):
+                       his.write(i.encode("utf-8"))
+                       his.write("\n")
+           with open("/Users/chenxuesong/.ledger/.Income", 'w') as his:
+               for i in history:
+                   if i.startswith("Income"):
+                       his.write(i.encode("utf-8"))
+                       his.write("\n")
+
+
+       if __name__ == '__main__':
+           extract_history_from_ledger_file("2019-finance.ledger")
+     #+END_SRC
+   - 自定义函数读取列表，并转换
+     #+BEGIN_SRC elisp
+         (defun chenxuesong-read-lines (filePath)
+           "Return a list of lines of a file at filePath."
+           (with-temp-buffer
+             (insert-file-contents filePath)
+             (split-string (buffer-string) "\n" t)))
+         (defun prompt-completion-assets ()
+           (string-join (chenxuesong-read-lines "/Users/chenxuesong/.ledger/.Assets") "|"))
+         (defun prompt-completion-income ()
+           (string-join (chenxuesong-read-lines "/Users/chenxuesong/.ledger/.Income") "|"))
+         (defun prompt-completion-liabilities ()
+           (string-join (chenxuesong-read-lines "/Users/chenxuesong/.ledger/.Liabilities") "|"))
+         (defun prompt-completion-expense ()
+           (string-join (chenxuesong-read-lines "/Users/chenxuesong/.ledger/.Expense") "|"))
+       #+END_SRC
+   - 重新修改配置
+     #+BEGIN_SRC elisp
+            ("f" "Ledger")
+            ("fi" "Income" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+             "\n\t%(org-read-date) * %^{Payee}\n\t\t\t%^{Account|%(prompt-completion-assets)}    %^{Amount} CNY\n\t\t\t%^{Income|%(prompt-completion-income)}")
+            ("fe" "Expenses" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+             "\n\t%(org-read-date) * %^{Payee}\n\t\t\t%^{Expenses|%(prompt-completion-expense)}    %^{Amount} CNY\n\t\t\t%^{Account|%(prompt-completion-assets)}")
+            ("fl" "Liabilities" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+             "\n\t%(org-read-date) * %^{Payee}\n\t\t\t%^{Account|%(prompt-completion-expense)}    %^{Amount} CNY\n\t\t\t%^{LAccount|%(prompt-completion-liabilities)}")
+            ("ft" "Transaction" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+             "\n\t%(org-read-date) * %^{Payee}\n\t\t\t%^{AccountIn|%(prompt-completion-assets)}    %^{Amount} CNY\n\t\t\t%^{AccountOut|%(prompt-completion-assets)}") 
+          #+END_SRC
+3. have fun
+   [[file:../images/capture-prompt.png]]

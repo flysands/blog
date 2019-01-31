@@ -1,0 +1,30 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: ledger org
+#+JEKYLL_COMMENTS: true
+#+TITLE: Ledger记账改进
+*** 文件汇总
+1. 使用tangle把ledger source block汇总到一个文件
+   #+BEGIN_QUOTE
+   使用:tangle 文件名作为参数，C-c C-v t执行org-babel-tangle函数则可以提取代码块到指定文件中。
+   #+END_QUOTE
+*** capture
+#+BEGIN_SRC elisp
+  (setq org-capture-templates '(
+                                ("f" "Ledger")
+                                ("fi" "Income" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+                                 "\t%(org-read-date) * %^{Payee}\n\t\t\tAssets:%^{Account}    %^{Amount} CNY\n\t\t\tIncome:%^{Income}")
+                                ("fe" "Expenses" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+                                 "\t%(org-read-date) * %^{Payee}\n\t\t\tExpenses:%^{Account}    %^{Amount} CNY\n\t\t\tAssets:%^{Account}")
+                                ("fl" "Liabilities" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+                                 "\t%(org-read-date) * %^{Payee}\n\t\t\tExpenses:%^{Account}    %^{Amount} CNY\n\t\t\tLiabilities:%^{LAccount}")
+                                ("ft" "Transaction" plain (file (format "~/org/%s-finance.ledger" (format-time-string "%Y")))
+                                 "\t%(org-read-date) * %^{Payee}\n\t\t\tAssets:%^{AccountIn}    %^{Amount} CNY\n\t\t\tAssets:%^{AccountOut}"))
+#+END_SRC
+*** web界面
+使用 *ledger-analytics* 对财务数据进行分析，在浏览器中分析财务报表。
+[[file:../images/2018%E8%B4%A2%E5%8A%A1%E7%BB%9F%E8%AE%A1.png]]

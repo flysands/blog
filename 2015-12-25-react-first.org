@@ -1,0 +1,138 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+JEKYLL_CATEGORIES: react
+#+JEKYLL_TAGS: cross-platform
+#+JEKYLL_COMMENTS: true
+#+TITLE: react-native开发跨平台应用
+
+** react-native背景 
+React Native 结合了 Web 应用和 Native 应用的优势,可以使用 JavaScript 来开发
+iOS 和 Android 原生应.在 JavaScript 中用 React 抽象操作系统原生的 UI 组件,
+代替 DOM 元素来渲染等.
+
+React Native 使你能够使用基于 JavaScript 和 React 一致的开发体验在本地平台
+上构建世界一流的应用程序体验.React Native 把重点放在所有开发人员关心的平台
+的开发效率上.所以开发者只需学习一种语言就能轻易为任何平台高效地编写代码.
+
+** 安装工具集
+| requirement  | version                       |
+|--------------+-------------------------------|
+| xcode        | ios 7以上                     |
+| android      | android build tool 23.0.1以上 |
+| nodejs       | 4.0以上                       |
+| react-native | 0.1.7                         |
+
+我的机器是osx,所以整个安装过程都用brew进行.安装之前建议先更新一下brew.
+#+BEGIN_SRC shell
+brew update
+brew upgrade
+#+END_SRC
+
++ 安装nodejs
+
+  mac用户直接去官网下载pkg文件安装.注意nodejs版本要高于4.0.
++ 安装watchman
+  #+BEGIN_SRC shell
+  brew install watchman
+  #+END_SRC
++ 安装flow
+  #+BEGIN_SRC shell
+  brew install flow
+  #+END_SRC
++ 安装react-native
+  #+BEGIN_SRC shell
+  npm install -g react-native-cli
+  #+END_SRC
+
+** 第一个跨平台应用
+创建过程可以参考帮助文档[fn:1].
+所有工具集安装完毕后,创建第一个project吧.
+#+BEGIN_SRC shell
+react-native init your-project-dir
+#+END_SRC
+project创建成功后会生成ios和android的project目录,以及两个平台的index入口js
+文件.
+
++ run android device
+  #+BEGIN_SRC shell
+  cd your-project
+  react-native run-android
+  #+END_SRC
+  
+  查看日志
+  #+BEGIN_SRC shell
+  adb logcat *:S ReactNative:V ReactNativeJS:V
+  #+END_SRC
+  启动成功
+  [[file:../images/react-native.png]]
++ run ios
+  打开ios目录中的xcodeproj文件.点击run按钮即可.
+
+** 使用组件
+react-native提供了丰富的native组件.
+#+BEGIN_SRC javascript
+var React = require('react-native');
+var {
+  AppRegistry,
+  StyleSheet,
+  Text,
+  View,
+  TextInput,// add text input component
+} = React;
+
+
+var TestProject = React.createClass({
+  render: function() {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.welcome}>
+          Welcome to React Native!
+        </Text>
+        <Text style={styles.instructions}>
+          To get started, edit index.android.js
+        </Text>
+        <Text style={styles.instructions}>
+          Shake or press menu button for dev menu
+        </Text>
+        // add text input
+        <TextInput
+        style={{height: 40, borderColor: 'gray', borderWidth: 1}}
+        onChangeText={(text) => this.setState({text})}
+        />
+      </View>
+    );
+  }
+});
+
+#+END_SRC
+
+[[file:../images/react-native-input.png]]
+
+** 问题
+1. 安装react-native报警
+
+   如果用nvm管理多个node版本.并且安装提示node版本过低.重新下载pkg安装包.安装
+即可.
+2. run-android报错
+
+   react-native android打包工具要23.0.1以上的版本.解决方法是在sdk manager中
+安装高版本android build tool.
+3. 启动报错
+
+   stackoverflow[fn:2]上有讨论,我在模拟器上执行adb reverse命令做端口映射即可.
+   #+BEGIN_SRC shell
+   adb reverse tcp:8081 tcp:8081
+   #+END_SRC
+
+** 总结
+
+总的来说开发方式还是便捷许多.但是存在一个普遍问题.跨平台应用开发的通病-性能.
+
+* Footnotes
+
+[fn:2] stackoverflow http://stackoverflow.com/questions/32572399/react-native-android-failed-to-load-js-bundle
+
+[fn:1] react-native doc https://facebook.github.io/react-native/docs/getting-started.html

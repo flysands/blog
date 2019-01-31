@@ -1,0 +1,13 @@
+#+JEKYLL_CATEGORIES: docker
+#+JEKYLL_TAGS: docker
+#+JEKYLL_COMMENTS: true
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: toc:nil
+#+TITLE: docker compose
+** compose
+docke command
+test command
+composess tb link

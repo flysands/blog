@@ -1,0 +1,27 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: emcas dired
+#+JEKYLL_COMMENTS: true
+#+TITLE: emacs批量替换
+1. 使用dired显示文件列表。
+   [[file:../images/dired.png]]
+2. 选择文件
+   - *m* for mark
+   - *u* for unmark
+   - *U* for unmark all
+   - 执行 *dired-mark-files-regexp* 正则匹配文件
+   [[file:../images/mark.png]]
+3. 交互式替换
+   #+BEGIN_QUOTE
+   执行dired-do-query-replace-regexp 
+   #+END_QUOTE
+   - *y* to replace current highlighted occurrence
+   - *n* to skip
+   - *C-g* to abort
+   - *!* to replace all occurrences in current file without more asking
+   - *N* to skip all possible replacement for rest of the current file
+   - *Y* to do the replacement on all files without further asking

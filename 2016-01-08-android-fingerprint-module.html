@@ -1,0 +1,510 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-06-07 Wed 21:48 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>android指纹模块</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="chenxuesong" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">android指纹模块</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org8da1903">1. android指纹模块流程图</a></li>
+<li><a href="#org8403fa7">2. android setting指纹模块入口</a></li>
+<li><a href="#org83f5c8c">3. nexus 6p无法启用finger问题原因</a></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org8da1903" class="outline-2">
+<h2 id="org8da1903"><span class="section-number-2">1</span> android指纹模块流程图</h2>
+<div class="outline-text-2" id="text-1">
+
+<div class="figure">
+<p><img src="http://7xia6k.com1.z0.glb.clouddn.com/android_finger_module_seq.png" alt="android_finger_module_seq.png" />
+</p>
+</div>
+
+<ul class="org-ul">
+<li>Tee : trusted excution env</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org8403fa7" class="outline-2">
+<h2 id="org8403fa7"><span class="section-number-2">2</span> android setting指纹模块入口</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+主要涉及到一下几个文件
+</p>
+<ul class="org-ul">
+<li>packages/apps/Settings/src/com/android/settings/SecuritySettings.java</li>
+<li>frameworks/base/core/java/android/hardware/fingerprint/FingerprintManager.java</li>
+<li>frameworks/base/services/core/java/com/android/server/fingerprint/FingerprintService.java</li>
+<li>frameworks/base/core/java/android/hardware/fingerprint/IFingerprintDaemon.aidl</li>
+<li>system/core/fingerprintd/IFingerprintDaemon.cpp</li>
+<li>system/core/fingerprintd/FingerprintDaemonProxy.cpp</li>
+<li>hardware/libhardware/hardware.c</li>
+<li>hardware/libhardware/modules/fingerprint/fingerprint.c</li>
+</ul>
+
+
+<div class="figure">
+<p><img src="http://7xia6k.com1.z0.glb.clouddn.com/android_finger_setting_load.png" alt="android_finger_setting_load.png" />
+</p>
+</div>
+
+<p>
+具体流程如下:
+</p>
+
+<ol class="org-ol">
+<li>Settings在做页面展示的时候会调用maybeAddFingerprintPreference函数判断是否
+添加fingerprint preference.</li>
+<li>maybeAddFingerprintPreference内部调用FingerprintManager的isHardwareDetected
+函数.</li>
+<li>FingerprintManager调用FingerprintService中的isHardwareDetected函数.</li>
+<li>FingerprintService中的isHardwareDetected函数首先进行权限检查,然后如果
+mDeviceHalId等于0返回false,表示没有检测到指纹相关的硬件.否则返回ture.
+mDeviceHalId为底层openHal的返回值.</li>
+<li><p>
+openHal函数的实现非常简单,代码片段如下.
+</p>
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #ce537a; font-weight: bold;">int64_t</span> <span style="color: #a45bad;">FingerprintDaemonProxy</span>::<span style="color: #bc6ec5; font-weight: bold;">openHal</span><span style="color: #4f97d7;">()</span> <span style="color: #4f97d7;">{</span>
+  ALOG<span style="color: #bc6ec5;">(</span>LOG_VERBOSE, LOG_TAG, <span style="color: #2d9574;">"nativeOpenHal()\n"</span><span style="color: #bc6ec5;">)</span>;
+  <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">err</span>;
+  <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">hw_module_t</span> *<span style="color: #7590db;">hw_module</span> = <span style="color: #a45bad;">NULL</span>;
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span> != <span style="color: #2d9574;">(</span>err = hw_get_module<span style="color: #67b11d;">(</span>FINGERPRINT_HARDWARE_MODULE_ID, &amp;hw_module<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Can't open fingerprint HW Module, error: %d"</span>, err<span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+  <span style="color: #bc6ec5;">}</span>
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">NULL</span> == hw_module<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"No valid fingerprint module"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+  <span style="color: #bc6ec5;">}</span>
+
+  mModule = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span>&lt;<span style="color: #4f97d7; font-weight: bold;">const</span> fingerprint_module_t *&gt;<span style="color: #bc6ec5;">(</span>hw_module<span style="color: #bc6ec5;">)</span>;
+
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mModule-&gt;common.methods-&gt;open == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"No valid open method"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+  <span style="color: #bc6ec5;">}</span>
+
+  <span style="color: #ce537a; font-weight: bold;">hw_device_t</span> *<span style="color: #7590db;">device</span> = <span style="color: #a45bad;">NULL</span>;
+
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span> != <span style="color: #2d9574;">(</span>err = mModule-&gt;common.methods-&gt;open<span style="color: #67b11d;">(</span>hw_module, <span style="color: #a45bad;">NULL</span>, &amp;device<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Can't open fingerprint methods, error: %d"</span>, err<span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+  <span style="color: #bc6ec5;">}</span>
+
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>kVersion != device-&gt;version<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Wrong fp version. Expected %d, got %d"</span>, kVersion, device-&gt;version<span style="color: #2d9574;">)</span>;
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">return 0; // </span><span style="color: #cc9393;">FIXME</span>
+  <span style="color: #bc6ec5;">}</span>
+
+  mDevice = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span>&lt;fingerprint_device_t *&gt;<span style="color: #bc6ec5;">(</span>device<span style="color: #bc6ec5;">)</span>;
+  err = mDevice-&gt;set_notify<span style="color: #bc6ec5;">(</span>mDevice, hal_notify_callback<span style="color: #bc6ec5;">)</span>;
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>err &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Failed in call to set_notify(), err=%d"</span>, err<span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+  <span style="color: #bc6ec5;">}</span>
+
+  <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Sanity check - remove</span>
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mDevice-&gt;notify != hal_notify_callback<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"NOTIFY not set properly: %p != %p"</span>, mDevice-&gt;notify,
+          hal_notify_callback<span style="color: #2d9574;">)</span>;
+  <span style="color: #bc6ec5;">}</span>
+
+  ALOG<span style="color: #bc6ec5;">(</span>LOG_VERBOSE, LOG_TAG, <span style="color: #2d9574;">"fingerprint HAL successfully initialized"</span><span style="color: #bc6ec5;">)</span>;
+  <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span>&lt;int64_t&gt;<span style="color: #bc6ec5;">(</span>mDevice<span style="color: #bc6ec5;">)</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">This is just a handle</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+openHal函数主要实现以下3个功能
+</p>
+
+<ul class="org-ul">
+<li>调用hw_get_module加载对应的库文件</li>
+
+<li><p>
+调用module结构体的common.methods-&gt;open指向的函数
+module结构体定义如下
+</p>
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">struct</span> <span style="color: #ce537a; font-weight: bold;">hw_module_methods_t</span> <span style="color: #7590db;">fingerprint_module_methods</span> = <span style="color: #4f97d7;">{</span>
+    .open = fingerprint_open,
+<span style="color: #4f97d7;">}</span>;
+
+<span style="color: #ce537a; font-weight: bold;">fingerprint_module_t</span> <span style="color: #7590db;">HAL_MODULE_INFO_SYM</span> = <span style="color: #4f97d7;">{</span>
+    .common =
+        <span style="color: #bc6ec5;">{</span>
+            .tag = HARDWARE_MODULE_TAG,
+            .module_api_version = FINGERPRINT_MODULE_API_VERSION_2_0,
+            .hal_api_version = HARDWARE_HAL_API_VERSION,
+            .id = FINGERPRINT_HARDWARE_MODULE_ID,
+            .name = <span style="color: #2d9574;">"Emulator Fingerprint HAL"</span>,
+            .author = <span style="color: #2d9574;">"The Android Open Source Project"</span>,
+            .methods = &amp;fingerprint_module_methods,
+        <span style="color: #bc6ec5;">}</span>,
+<span style="color: #4f97d7;">}</span>;
+</pre>
+</div>
+<p>
+fingerprint_open函数定义如下
+</p>
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">fingerprint_open</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">hw_module_t</span> *<span style="color: #7590db;">module</span>, <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span> <span style="color: #7590db;">__unused</span> *id,
+                            <span style="color: #ce537a; font-weight: bold;">hw_device_t</span> **<span style="color: #7590db;">device</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+  <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>device == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"NULL device on open"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> -EINVAL;
+  <span style="color: #bc6ec5;">}</span>
+
+  <span style="color: #ce537a; font-weight: bold;">fingerprint_device_t</span> *<span style="color: #7590db;">dev</span> = malloc<span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span>fingerprint_device_t<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>;
+  memset<span style="color: #bc6ec5;">(</span>dev, <span style="color: #a45bad;">0</span>, <span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span>fingerprint_device_t<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>;
+
+  dev-&gt;common.tag = HARDWARE_DEVICE_TAG;
+  dev-&gt;common.version = FINGERPRINT_MODULE_API_VERSION_2_0;
+  dev-&gt;common.module = <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">struct</span> <span style="color: #ce537a; font-weight: bold;">hw_module_t</span> *<span style="color: #bc6ec5;">)</span>module;
+  dev-&gt;common.close = fingerprint_close;
+
+  dev-&gt;pre_enroll = fingerprint_pre_enroll;
+  dev-&gt;enroll = fingerprint_enroll;
+  dev-&gt;get_authenticator_id = fingerprint_get_auth_id;
+  dev-&gt;cancel = fingerprint_cancel;
+  dev-&gt;remove = fingerprint_remove;
+  dev-&gt;set_active_group = fingerprint_set_active_group;
+  dev-&gt;authenticate = fingerprint_authenticate;
+  dev-&gt;set_notify = set_notify_callback;
+  dev-&gt;notify = <span style="color: #a45bad;">NULL</span>;
+
+  *device = <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">hw_device_t</span> *<span style="color: #bc6ec5;">)</span>dev;
+  <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div></li>
+
+<li>调用set_notify设置回调函数</li>
+</ul></li>
+<li>hw_get_module函数主要实现底层so库加载
+具体加载过程可以参考<a href="http://www.embedu.org/Column/Column733.htm">android hw_get_module 分析</a></li>
+<li><p>
+hw_get_module内部调用hw_get_module_by_class实现加载过程
+</p>
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #2aa1ae; background-color: #292e34;">/** </span><span style="color: #2aa1ae; background-color: #292e34;">Base path of the hal modules */</span>
+<span style="color: #bc6ec5;">#if</span> <span style="color: #bc6ec5;">defined</span><span style="color: #4f97d7;">(</span>__LP64__<span style="color: #4f97d7;">)</span>
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">HAL_LIBRARY_PATH1</span> <span style="color: #2d9574;">"/system/lib64/hw"</span>
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">HAL_LIBRARY_PATH2</span> <span style="color: #2d9574;">"/vendor/lib64/hw"</span>
+<span style="color: #bc6ec5;">#else</span>
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">HAL_LIBRARY_PATH1</span> <span style="color: #2d9574;">"/system/lib/hw"</span>
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">HAL_LIBRARY_PATH2</span> <span style="color: #2d9574;">"/vendor/lib/hw"</span>
+<span style="color: #bc6ec5;">#endif</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">/**</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * There are a set of variant filename for modules. The form of the filename</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * is "&lt;MODULE_ID&gt;.variant.so" so for the led module the Dream variants</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * of base "ro.product.board", "ro.board.platform" and "ro.arch" would be:</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * led.trout.so</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * led.msm7k.so</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * led.ARMV6.so</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * led.default.so</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">variant_keys</span><span style="color: #4f97d7;">[]</span> = <span style="color: #4f97d7;">{</span>
+    <span style="color: #2d9574;">"ro.hardware"</span>, <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">This goes first so that it can pick up a different</span>
+<span style="color: #2aa1ae; background-color: #292e34;">                      file on the emulator. */</span>
+    <span style="color: #2d9574;">"ro.product.board"</span>,
+    <span style="color: #2d9574;">"ro.board.platform"</span>,
+    <span style="color: #2d9574;">"ro.arch"</span><span style="color: #4f97d7;">}</span>;
+</pre>
+</div>
+<p>
+hw_get_module_by_class根据优先级搜索对应的so文件,文件名主要由两部分构成.
+第一部分为模块名,第二部分为类型.其中模块名固定,第二部分优先级顺序为:
+硬件 &gt; 产品 &gt; cpu &gt; arch &gt; default.
+</p>
+
+<p>
+如果以上函数都执行成功,那么fingerprint module则加载完成.
+</p></li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org83f5c8c" class="outline-2">
+<h2 id="org83f5c8c"><span class="section-number-2">3</span> nexus 6p无法启用finger问题原因</h2>
+<div class="outline-text-2" id="text-3">
+<ol class="org-ol">
+<li>清华镜像的源码选择angler product,编译出来的system.img里没有fingerprintd可执行文件.</li>
+<li>没有加载fingerprint module对应的库文件.</li>
+<li>hardware so库加载顺序有误.</li>
+<li>解决方法
+以移植goldfish为例
+<ol class="org-ol">
+<li>拷贝device/generic/goldfish/fingerprint目录到device/huawei/angler目录下</li>
+<li><p>
+修改device/huawei/angler/device.mk文件,添加fingerprint模块
+</p>
+<div class="org-src-container">
+<pre class="src src-makefile"><span style="color: #2aa1ae; background-color: #292e34;">#</span><span style="color: #2aa1ae; background-color: #292e34;">Fingerprint</span>
+<span style="color: #7590db;">PRODUCT_PACKAGES</span> += \
+                 fingerprintd \
+                 fingerprint.msm8994
+</pre>
+</div></li>
+<li><p>
+修改模块加载顺序
+由于源码编译出来的image文件,在system/vendor/lib64下含有fingerprint.angler.so.
+所以在hw_get_module会加载fingerprint.angler.so而忽略fingerprint.msm8994.so.
+所以修改hardware.c文件中的默认搜索顺序,把ro.board.platform放到第一即可.
+</p>
+<div class="org-src-container">
+<pre class="src src-c++"><span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">variant_keys</span><span style="color: #4f97d7;">[]</span> = <span style="color: #4f97d7;">{</span>
+    <span style="color: #2d9574;">"ro.board.platform"</span>,
+    <span style="color: #2d9574;">"ro.hardware"</span>, <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">This goes first so that it can pick up a different</span>
+<span style="color: #2aa1ae; background-color: #292e34;">                      file on the emulator. */</span>
+    <span style="color: #2d9574;">"ro.product.board"</span>,
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">"ro.board.platform",</span>
+    <span style="color: #2d9574;">"ro.arch"</span><span style="color: #4f97d7;">}</span>;
+</pre>
+</div></li>
+</ol></li>
+</ol>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: chenxuesong</p>
+<p class="date">Created: 2017-06-07 Wed 21:48</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>
