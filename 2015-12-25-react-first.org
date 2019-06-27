@@ -109,6 +109,7 @@ var TestProject = React.createClass({
 
 #+END_SRC
 
+#+ATTR_HTML: :width 300px :height 499px
 [[file:../images/react-native-input.png]]
 
 ** 问题

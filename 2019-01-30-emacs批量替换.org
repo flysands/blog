@@ -8,14 +8,16 @@
 #+JEKYLL_COMMENTS: true
 #+TITLE: emacs批量替换
 1. 使用dired显示文件列表。
+   #+ATTR_HTML: :width 502px :height 656px
    [[file:../images/dired.png]]
-2. 选择文件
+3. 选择文件
    - *m* for mark
    - *u* for unmark
    - *U* for unmark all
    - 执行 *dired-mark-files-regexp* 正则匹配文件
+   #+ATTR_HTML: :width 502px :height 656px
    [[file:../images/mark.png]]
-3. 交互式替换
+4. 交互式替换
    #+BEGIN_QUOTE
    执行dired-do-query-replace-regexp 
    #+END_QUOTE

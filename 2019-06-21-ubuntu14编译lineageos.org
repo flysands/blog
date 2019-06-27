@@ -1,0 +1,142 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android
+#+JEKYLL_COMMENTS: true
+#+TITLE:ubuntu14.04 编译 lineageos 14.1 for hammerhead
+* 环境配置
+** 切换apt源
+   切换apt源为阿里源，加快依赖包安装速度。
+   #+BEGIN_SRC shell :exports code
+     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+     sudo vim /etc/apt/sources.list
+     sudo apt-get update
+   #+END_SRC
+   将sources.list中默认源全部删除，使用如下所示的阿里源。
+   #+BEGIN_SRC shell
+   deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
+   deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse
+   deb http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse
+   deb http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse
+   deb http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse
+   deb-src http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse
+   deb-src http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse
+   deb-src http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse
+   deb-src http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse
+   deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse
+   #+END_SRC
+** 安装JDK8
+   lineageos 14.1使用android 7.1作为底版本，编译环境需要jdk8.
+   - LineageOS 16.0: OpenJDK 1.9 (included by default)
+   - LineageOS 14.1-15.1: OpenJDK 1.8 (install openjdk-8-jdk)
+   - LineageOS 11.0-13.0: OpenJDK 1.7 (install openjdk-7-jdk)
+   #+BEGIN_SRC shell :exports code
+     sudo add-apt-repository ppa:openjdk-r/ppa
+     sudo apt-get update
+     sudo apt-get install openjdk-8-jdk
+     sudo update-alternatives --config java
+     sudo update-alternatives --config javac
+   #+END_SRC
+   #+BEGIN_QUOTE
+   执行java -version命令查看版本是否安装成功。
+   #+END_QUOTE
+** 安装依赖包
+   #+BEGIN_SRC shell
+   sudo apt-get install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libsdl1.2-dev libssl-dev libwxgtk2.8-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev
+   #+END_SRC
+   #+BEGIN_QUOTE
+   如果是ubuntu 16之后的版本，libwxgtk2.8-dev改为libwxgtk3.0-dev。
+   #+END_QUOTE
+* 下载源码
+** 下载repo
+   #+BEGIN_SRC shell
+     curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o repo
+     chmod +x repo
+   #+END_SRC
+   repo的运行过程中会尝试访问官方的git源更新自己，如果想使用tuna的镜像源进行更新，可以将如下内容复制到你的~/.bashrc里，然后重启终端。
+   #+BEGIN_SRC shell
+     export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo/'
+   #+END_SRC
+** 建立工作目录
+   #+BEGIN_SRC shell
+     mkdir WORKING_DIRECTORY
+     cd WORKING_DIRECTORY
+   #+END_SRC
+** 初始化仓库
+   #+BEGIN_SRC shell
+     repo init -u https://mirrors.tuna.tsinghua.edu.cn/git/lineageOS/LineageOS/android.git -b cm-14.1 --depth=1
+   #+END_SRC
+   打开.repo/manifest.xml，进行内容替换，将
+   #+BEGIN_SRC xml
+     <remote  name="github"
+              fetch=".."
+              review="review.lineageos.org" />
+   #+END_SRC
+   改成
+   #+BEGIN_SRC xml
+     <remote  name="github"
+              fetch="https://github.com/" />
+
+     <remote  name="lineage"
+              fetch="https://mirrors.tuna.tsinghua.edu.cn/git/lineageOS/"
+              review="review.lineageos.org" />
+   #+END_SRC
+   将
+   #+BEGIN_SRC xml
+     <remote  name="aosp"
+              fetch="https://android.googlesource.com"
+   #+END_SRC
+   改成
+   #+BEGIN_SRC xml
+     <remote  name="aosp"
+              fetch="https://aosp.tuna.tsinghua.edu.cn"
+   #+END_SRC
+   将
+   #+BEGIN_SRC xml
+     <default revision="..."
+              remote="github"
+   #+END_SRC
+   改成
+   #+BEGIN_SRC xml
+     <default revision="..."
+              remote="lineage"
+   #+END_SRC
+** 添加hammerhead私有库
+   在.repo/local_manifests中添加roomservice.xml文件，添加以下内容
+   #+BEGIN_SRC xml
+     <?xml version="1.0" encoding="UTF-8"?>
+     <manifest>
+     <project name="LineageOS/android_packages_resources_devicesettings" path="packages/resources/devicesettings" remote="github" />
+     <project name="TheMuppets/proprietary_vendor_lge" path="vendor/lge" remote="github" />
+     </manifest>
+   #+END_SRC
+   #+BEGIN_QUOTE
+   私有库分为device specific configuration和kernel以及proprietary blobs，上面只添加了proprietary blobs文件，device specific configuration和hernel会在breakfast命令中自动下载。
+   #+END_QUOTE
+** 同步源码
+   #+BEGIN_SRC shell
+     repo sync --no-clone-bundle --current-branch
+   #+END_SRC
+* 编译源码
+** 编译配置变量
+   在~/.bashrc中添加以下内容
+   #+BEGIN_SRC shell
+     export USE_CCACHE=1
+     ccache -M 50G
+     export CCACHE_COMPRESS=1
+     export ANDROID_JACK_VM_ARGS="-Dfile.encoding=UTF-8 -XX:+TieredCompilation -Xmx4G"
+   #+END_SRC
+   #+BEGIN_QUOTE
+   添加问之后，source ~/.bashrc。
+   #+END_QUOTE
+** 执行编译
+   #+BEGIN_SRC shell
+     croot
+     brunch hammerhead
+   #+END_SRC
+   #+BEGIN_QUOTE
+   执行过程中会自动下载部分代码，若下载失败，可以手动编辑.repo/local_manifests/roomservice.xml。添加对应库，然后执行repo sync添加库的路径。（比如device/lge/hammerhead）
+   #+END_QUOTE

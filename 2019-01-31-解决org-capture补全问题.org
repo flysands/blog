@@ -100,4 +100,5 @@
              "\n\t%(org-read-date) * %^{Payee}\n\t\t\t%^{AccountIn|%(prompt-completion-assets)}    %^{Amount} CNY\n\t\t\t%^{AccountOut|%(prompt-completion-assets)}") 
           #+END_SRC
 3. have fun
+   #+ATTR_HTML: :width 318px :height 470px
    [[file:../images/capture-prompt.png]]

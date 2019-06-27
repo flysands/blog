@@ -1,0 +1,44 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android os
+#+JEKYLL_COMMENTS: true
+#+TITLE:win10通过easyBCD引导安装Ubuntu14.04 
+* 准备工作
+  1. Win10系统
+  2. Ubuntu 14.04.6系统镜像文件（64位，*amd64.iso）
+  3. EasyBCD
+  4. UltraISO
+* 下载系统镜像
+  前往阿里云镜像下载系统，下载amd64版本。[[http://mirrors.aliyun.com/ubuntu-releases/14.04/][下载地址]]
+* 文件配置
+  1. 拷贝系统镜像文件到C盘根目录
+  2. 使用UltroISO工具打开系统镜像文件，解压casper文件夹中的initrd和vmlinuz到c盘根目录
+* 配置启动项
+  在EasyBCD中添加新条目，选择NeoGrub。点击安装，然后选择配置。添加一下内容，然后保存。
+  #+BEGIN_QUOTE
+  hd0为第一个磁盘，0表示第一个分区。根据实际情况自行调整。
+  #+END_QUOTE
+  #+BEGIN_SRC shell
+    title Install Ubuntu
+    root (hd0,0)
+    kernel (hd0,0)/vmlinuz boot=casper iso-scan/filename=/ubuntu-14.04.6-desktop-amd64.iso locale=zh_CN.UTF-8
+    initrd (hd0,0)/initrd
+    title reboot
+    reboot
+    title halt
+    halt
+  #+END_SRC
+  #+BEGIN_QUOTE
+  此时确保C盘中，存在NST文件夹和系统镜像文件、initrd、vmlinuz、NeoGrub文件。
+  #+END_QUOTE
+* 配置磁盘
+  在计算机管理-磁盘管理中，删除卷，保留空闲空间，保证留有足够的空间供ubuntu后续安装使用。
+* 正式安装
+  重启电脑，可以看到多了一个启动项“NeoGrub引导加载器”，选择该项enter，然后选择“install ubuntu”，另外两项分别是“重启”和“关机”，这几个选项与之前添加的NeoGrub配置项对应。
+  #+BEGIN_QUOTE
+  选完后就进入一个小系统，通过快捷键ctrl+alt+T打开终端，输入：sudo umount -l /isodevice。然后点击安装即可。
+  #+END_QUOTE

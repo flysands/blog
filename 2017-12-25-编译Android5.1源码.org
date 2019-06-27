@@ -46,6 +46,9 @@
        repo init -u https://aosp.tuna.tsinghua.edu.cn/platform/manifest -b android-5.1.1_r14
        repo sync
      #+END_SRC
+     #+BEGIN_QUOTE
+     在repo init的时候可以加上--depth=1，这样可以不用同步历史记录。在repo sync的时候可以加上--current-branch参数，只同步当前分支。
+     #+END_QUOTE
 2. 下载驱动文件
    前往[[https://developers.google.com/android/drivers][ android驱动下载页面]] 下载对应驱动文件.本次编译选用设备为Nexus 5.编译版本号为LMY48M.把下载好的驱动包放入android根目录解压,并执行解压出来的三个脚本.注意脚本会提示你查看版权直接q,然后输入I ACCEPT.
 3. 检查make版本

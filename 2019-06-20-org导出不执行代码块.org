@@ -1,0 +1,27 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: org
+#+JEKYLL_TAGS: emacs org
+#+JEKYLL_COMMENTS: true
+#+TITLE:org导出不执行代码块
+* 前言
+  使用org作为博客系统的后端，每次导出文章的时候都会提示是否执行代码块“evalute this * code block on your system ”。随着文章数量增多，每次都要连续取消多次。所以学习了一下如何取消代码块的执行。
+* 解决方法
+  1. 使用org-confirm-babel-evaluate
+     可以使用org-confirm-babel-evaluate取消提示，但是治标不治本。
+     #+BEGIN_SRC emacs-lisp
+       (defun my-org-confirm-babel-evaluate (lang body)
+         (not (string= lang "ditaa")))  ; don't ask for ditaa
+       (setq org-confirm-babel-evaluate 'my-org-confirm-babel-evaluate)
+     #+END_SRC
+  2. 控制导出内容
+     src block可以添加exports参数，指定code、results、both、none。分别对应导出代码、结果、全部、无。设置exports参数为results，在org转换过程中还是会提示“evalute this * code block on your system ”。
+  3. 使用eval参数控制代码块执行
+     比如当使用plantuml画图的时候，我们只想在博客中展示图片，而非内容时。可以使用eval参数搭配exports参数。先执行一次code block，生成results。然后将code block的eval属性设置为no，exports属性设置为results。
+     #+BEGIN_QUOTE
+     如果想在文件中全局生效，直接配置属性#+PROPERTY: header-args :eval no
+     #+END_QUOTE
+     
