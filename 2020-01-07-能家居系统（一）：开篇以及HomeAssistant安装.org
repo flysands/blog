@@ -1,0 +1,98 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: RPI
+#+LANGUAGE: zh-CN
+#+JEKYLL_TAGS: RPI
+#+JEKYLL_COMMENTS: true
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="my-style.css" />
+#+TITLE:智能家居（一）：开篇以及HomeAssistant安装
+* 开篇
+#+begin_quote
+使用homeassistant+homebridge+homekit的方案，从零打造智能家居平台。具体实现图如下所示。
+#+end_quote
+#+begin_src ditaa :exports none
+
+  +-----------+     +-----------+     +-----------+
+  |  Device1  |     |  Device2  |     |  DeviceN  |
+  +-----+-----+     +-----+-----+     +-----+-----+
+        +-----------------+-----------------|
+             +------------+------------+
+    +--------+--------+       +--------+--------+ 
+    |  RaspberryPi4   |   +   |  HomeAssistant  |
+    +--------+--------+       +--------+--+-----+
+             +------------+------------+  |
+                          |               |
+                   +------+-------+       |
+                   |  HomeBridge  |       +--------+
+                   +-------+------+                |
+                           |                       |
+                   +-------+------+          +-----+-----+
+                   |  IOS Device  |          |  Browser  |
+                   +--------------+          +-----------+
+
+#+end_src
+
+#+CAPTION: 系统结构图
+[[file:../images/202001/system.png]]
+
+- HomeKit
+
+  苹果于2015年5月发布的智能家居平台，内置到部分IOS设备中。
+- HomeBridge
+
+  前苹果员工开发一个开源程序，用于让HomeKit支持一些原生不支持HomeKit的设备（如米家家居）。
+- HomeAssistant
+
+  第三方的智能家居平台
+* HomeAssistant是什么？
+  #+begin_quote
+  HomeAssistant是构建智慧空间的神器。是一个成熟完整的基于 Python 的智能家居系统，设备支持度高，支持自动化（Automation)、群组化（Group）、UI 客制化（Theme) 等等高度定制化设置。同样实现设备的 Siri 控制。基于HomeAssistant，可以方便地连接各种外部设备（智能设备、摄像头、邮件、短消息、云服务等，成熟的可连接组件有近千种），手动或按照自己的需求自动化地联动这些外部设备，构建随心所欲的智慧空间。HomeAssistant是开源的，它不属于任何商业公司，用户可以无偿使用。
+  #+end_quote
+* HomeAssistant结构和组件
+HomeAssistant运行起来的进程名为hass。hass由两部分组成，内核（core）和组件（component）。如果将hass比作人体的神经系统，那么内核就是中枢神经系统（大脑），组件就是周围神经系统。hass内核的基础工作机制是简单的，理解了状态、事件、服务三个概念，就理解了内核；其简单性类似于大脑的基础工作机制，仅是神经元的相互作用而已。hass内核并不与外部世界直接互动，而是通过组件连接外部世界；类似于大脑并不直接与感觉器官、运动器官连接，而是通过周围神经系统进行连接。HomeAssistant中有近千种不同的组件，这是其能与丰富的物联世界协同交互的基础，并且数量在快速的增长。
+
+#+CAPTION: hass core架构图
+[[file:../images/202001/ha-core-arch.png]]
+- light.hue组件负责与飞利浦HUE智能灯的互动（感知与设置其当前状态）。
+- camera.mjpeg组件负责获得摄像头的标准MJPEG视频流。
+- sensor.yr组件负责与yr.no云服务通讯，获得天气信息。
+- http组件负责对外提供的http协议服务。
+- frontend组件，在http组件的基础上，负责与浏览器的交互。
+- ifttt组件，负责与INTERNET上另一个大脑（IFTTT）的通讯与互动。
+
+#+CAPTION: hass component架构图
+[[file:../images/202001/component-arch.png]]
+* HomeAssistant安装
+** python环境安装
+- python3
+  #+begin_src shell
+    sudo apt-get install python3.5
+  #+end_src
+- python开发资源
+  #+begin_src shell
+    sudo apt-get install python3.5-dev
+  #+end_src
+- pip安装
+  #+begin_src shell
+    sudo apt install python3-pip
+  #+end_src
+** HomeAssistant
+- 安装
+  #+begin_src shell
+    sudo pip3 install homeassistant 
+  #+end_src
+- 启动
+  #+begin_src shell
+    hass --open-ui
+  #+end_src
+启动界面如下，需要创建账户之后才可使用。另外提一下，远程编辑树莓派上的文件，我直接在emacs用 *tramp* 进行编辑。
+
+#+CAPTION: hass启动界面
+[[file:../images/202001/create-account.png]]
+
+另外hass的配置文件为configratuib.yml，后续会陆续配置。
+#+CAPTION: hass配置文件
+[[file:../images/202001/hass-config.png]]

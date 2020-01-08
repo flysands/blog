@@ -1,0 +1,150 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: python
+#+JEKYLL_TAGS: python
+#+JEKYLL_COMMENTS: true
+#+TITLE:python虚拟环境学习
+
+#+begin_quote
+下图展示了python的包管理和环境管理越来越复杂和混乱，我在日常工作中也碰到了类似问题。目前我的Mac自带的Python是2.7.14，由于工作需要，部分项目需要Python 3.x版本。此时需要在系统中安装多个Python，但又不能影响系统自带的Python。达到实现Python的多版本共存，pyenv就是这样一个Python版本管理器，方便我在项目中来回切换python版本，搭配virtualenv或者pipenv使用效果更佳。 
+#+end_quote
+[[file:../images/python.jpg]]
+* pyenv
+pyenv 是一个开源的Python版本管理工具，可以轻松地给系统安装任意Python版本，想玩哪个版本，瞬间就可以切换。有了pyenv，我们不需要再为系统多版本Python共存问题而发愁，也不用为手动编译安装其他Python版本而浪费时间，只需要执行一条简单的命令就可以切换并使用任何其他版本，该工具真正地做到了开箱即用，非常简单实用。
+** 安装和配置
+mac下直接通过homebrew安装。
+#+begin_src shell
+  brew update
+  brew install pyenv
+#+end_src
+为pyenv配置环境变量。（我用的shell为zsh）
+#+begin_src shell
+  #if which pyenv > /dev/null; then eval "$(pyenv init -)"; fi
+  #export PYENV_ROOT=/usr/local/var/pyenv
+
+  export PYENV_ROOT="$HOME/.pyenv"
+  export PATH="$PYENV_ROOT/bin:$PATH"
+
+  if which pyenv > /dev/null;
+  then eval "$(pyenv init -)";
+  fi
+#+end_src
+** 常用命令
+- 查看有哪些Python版本可以安装
+  #+begin_src shell
+    pyenv install --list
+  #+end_src
+- 安装某个Python版本
+  #+begin_src shell
+    pyenv install -v 版本号
+  #+end_src
+- 查看当前系统中安装的python
+  #+begin_src shell
+    pyenv versions
+  #+end_src
+- 设置python版本
+  #+begin_src shell
+    # 设置全局版本，全局生效
+    python global 版本号
+    # 设置局部版本，仅在指定文件夹下生效
+    python local 版本号
+  #+end_src
+* virtualenv
+virtualenv是一个用来创建完全隔离的Python虚拟环境的工具，可以为每个项目工程创建一套独立的Python环境，从而可以解决不同工程对Python包，或者版本的依赖问题。假如有 A 和 B 两个工程，A 工程代码要跑起来需要requests 1.18.4，而B工程跑起来需要requests 2.18.4，这样在一个系统中就无法满足两个工程同时运行问题了。最好的解决办法是用virtualenv给每个工程创建一个完全隔离的Python虚拟环境，给每个虚拟环境安装相应版本的包，让程序使用对应的虚拟环境运行即可。这样既不影响系统Python环境，也能保证任何版本的Python程序可以在同一系统中运行。
+** 安装和配置
+#+begin_src shell
+  sudo pip install virtualenv
+#+end_src
+** 常用命令
+- 创建虚拟环境
+  #+begin_src shell
+    mkdir myproject
+    # 使用系统当前的Python版本创建虚拟环境
+    virtualenv venv
+    # 创建虚拟环境时指定Python版本
+    virtualenv -p ~/.pyenv/versions/2.7.10/bin/python venv
+  #+end_src
+- 激活创建的虚拟环境并使用
+  #+begin_src shell
+    source venv/bin/activate
+  #+end_src
+- 退出虚拟环境回到系统版本
+  #+begin_src shell
+    deactivate
+  #+end_src
+* pipenv
+pipenv 是Kenneth Reitz大神的作品，能够有效管理Python多个环境，各种包。上面讲了用pyenv+virtualenv搭建虚拟环境，管理python版本，但是跨平台的使用不太一致，且有时候处理包之间的依赖总存在问题。另外过去也常常用pip进行包的管理，pip已经足够好，但是仍然推荐pipenv，相当于virtualenv和pip的合体，且更加强大。
+*pipenv有以下特性* 
+- pipenv集成了pip，virtualenv两者的功能，且完善了两者的一些缺陷
+- 过去用virtualenv管理requirements.txt文件可能会有问题，Pipenv使用Pipfile和Pipfile.lock，后者存放将包的依赖关系，查看依赖关系是十分方便
+- 各个地方使用了哈希校验，无论安装还是卸载包都十分安全，且会自动公开安全漏洞
+- 通过加载.env文件简化开发工作流程
+- 支持Python2 和 Python3，在各个平台的命令保持一致
+** 安装和配置
+#+begin_src shell
+  pip3 install pipenv
+#+end_src
+** 常用命令
+- 创建虚拟环境
+  #+begin_src shell
+    # 使用本地默认python版本创建虚拟环境
+    pipenv install
+    # 使用指定python版本创建虚拟环境
+    pipenv --python 3.7
+  #+end_src
+- 激活虚拟环境
+  #+begin_src shell
+    pipenv shell
+  #+end_src
+- 包管理
+  #+begin_src shell
+    # 安装第三方模块, 运行后会生成Pipfile和Pipfile.lock文件
+    # 安装包（默认最新可用版本）
+    pipenv install flask
+    # 安装指定版本的包
+    pipenv install flask==0.12.1
+    # 在开发环境安装包
+    pipenv install pytest --dev
+    # 删除包
+    pipenv uninstall pytest
+  #+end_src
+  #+begin_quote
+  无论是生产环境还是开发环境的包都会写入一个Pipfile里面，而如果是用传统方法，需要2个文件：dev-requirements.txt 和 test-requirements.txt。接下来如果在开发环境已经完成开发，如果想进行生产环境构建。这时候就要使用Pipfile.lock了，运行以下命令，把当前环境的模块lock住, 它会更新Pipfile.lock文件，该文件是用于生产环境的。
+  #+end_quote
+- Pipfile和Pipfile.lock
+  #+begin_src shell
+    # 在生产中恢复环境至与开发环境保持一致，copy Pipfile.lock到生产环境，然后执行以下一条命令
+    pipenv install --ignore-pipfile
+    # 如果要在另一个开发环境做开发，则将代码和Pipfile复制过去，运行以下命令
+    pipenv install --dev
+  #+end_src
+  #+begin_quote
+  由于Pipfile里面没有所有子依赖包或者确定的版本，因此该安装可能会更新未指定模块的版本号，这不仅不是问题，还解决了一些其他问题，我在这里做一下解释：假如该命令更新了一些依赖包的版本，由于我肯定还会在新环境做单元测试或者功能测试，因此我可以确保这些包的版本更新是不会影响软件功能的；然后我会pipenv lock并把它发布到生产环境，因此我可以确定生产环境也是不会有问题的。这样一来，我既可以保证生产环境和开发环境的一致性，又可以不用管理众多依赖包的版本。
+  #+end_quote
+- 常用命令列表
+  #+BEGIN_EXPORT html
+  <style>
+    table {
+    margin: 0 auto;
+    border-top-style: hidden;
+    border-bottom-style: hidden;
+    }
+  </style>
+  #+END_EXPORT
+  | 命令                          | 功能                           |
+  |-------------------------------+--------------------------------|
+  | pipenv --where                | 列出本地工程路径               |
+  | pipenv --venv                 | 列出虚拟环境路径               |
+  | pipenv --py                   | 列出虚拟环境的Python可执行文件 |
+  | pipenv install                | 创建虚拟环境                   |
+  | pipenv isntall [moduel]       | 安装包                         |
+  | pipenv install [moduel] --dev | 安装包到开发环境               |
+  | pipenv uninstall[module]      | 卸载包                         |
+  | pipenv uninstall --all        | 卸载所有包                     |
+  | pipenv graph                  | 查看包依赖                     |
+  | pipenv lock                   | 生成lockfile                   |
+  | pipenv run python [pyfile]    | 运行py文件                     |
+  | pipenv --rm                   | 删除虚拟环境                   |

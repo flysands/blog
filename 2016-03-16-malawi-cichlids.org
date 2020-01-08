@@ -8,6 +8,16 @@
 #+OPTIONS: ^:nil
 #+TITLE: malawi-cichlids
 
+#+BEGIN_EXPORT html
+  <style>
+    table {
+    margin: 0 auto;
+    border-top-style: hidden;
+    border-bottom-style: hidden;
+    }
+  </style>
+#+END_EXPORT
+
 | 学名                                   | 中文名     | 状况 |  尺寸 | 价格 | 公母 | 品系 | 数目 |
 |----------------------------------------+------------+------+-------+------+------+------+------|
 | Aristochromis christyi                 | 鸟嘴       | 发色 | 17-20 |  200 | 公   | 野生 |    1 |

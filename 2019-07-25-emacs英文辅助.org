@@ -1,0 +1,95 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: emacs
+#+JEKYLL_COMMENTS: true
+#+TITLE:emacs辅助学习英语
+
+#+begin_quote
+作为技术工作者，英语水平相当重要。如果把英语学习整合到emacs中，在技术学习的过程中学习英语。长期日积月累，假以时日，定有所成。
+#+end_quote
+* 环境准备
+** 本机环境
+#+begin_comment
+Mac osx 10.12、emacs 26.1、spacemacs develop分支
+#+end_comment
+** sdcv
+mac下直接使用brew安装星际译王的命令行版本。
+#+begin_src shell
+  brew install sdcv
+#+end_src
+** 字典
+前往[[http://download.huzheng.org/zh_CN/][http://download.huzheng.org/zh_CN/]]下载字典。
+** 配套插件
+感谢manateelazycat和二呆师傅贡献的插件。本次配置需要使用以下4个插件。
+*** spacemacs配置
+- layer配置
+  #+begin_src emacs-lisp
+    (setq chenxuesong-packages
+          '(
+            ;; package names go here
+            (posframe :location local)
+            (sdcv :location local)
+            (insert-translated-name :location local)
+            (company-english-helper :location local)
+            ))
+  #+end_src
+- 插件配置
+*** posframe
+#+begin_src emacs-lisp
+  (defun chenxuesong/init-posframe ()
+    (use-package posframe))
+#+end_src
+*** sdcv
+#+begin_quote
+sdcv-dictionary-data-dir注意和你存放词库的路径一致，sdcv-dictionary-simple-list注意保持和词库文件夹名称一致。
+#+end_quote
+#+begin_src emacs-lisp
+  (defun chenxuesong/init-sdcv ()
+    (use-package sdcv
+      :init
+      (progn
+        (evil-leader/set-key "ot" 'sdcv-search-pointer+) ;快捷键
+        (setq sdcv-say-word-p t)               ;say word after translation
+
+        (setq sdcv-dictionary-data-dir "/Users/chenxuesong/dict/stardict") ;setup directory of stardict dictionary
+
+        (setq sdcv-dictionary-simple-list    ;setup dictionary list for simple search
+              '("懒虫简明英汉词典"
+                "懒虫简明汉英词典"
+                "KDic11万英汉词典"))
+
+        (setq sdcv-dictionary-complete-list     ;setup dictionary list for complete search
+              '(
+                "懒虫简明英汉词典"
+                "懒虫简明汉英词典"
+                "牛津英汉双解美化版"
+                ))
+        )))
+#+end_src
+*** company-english-helper
+#+begin_src emacs-lisp
+  (defun chenxuesong/init-company-english-helper ()
+    (use-package company-english-helper))
+#+end_src
+*** insert-translated-name
+#+begin_src emacs-lisp
+  (defun chenxuesong/init-insert-translated-name ()
+    (use-package insert-translated-name
+      :init
+      (progn
+        (evil-leader/set-key "ot" 'insert-translated-name-insert)
+        (setq insert-translated-name-translate-engine "youdao")
+        )
+      )
+    )
+#+end_src
+* 查单词
+file:../images/%E7%BF%BB%E8%AF%91%E5%8D%95%E8%AF%8D.gif
+* 单词拼写补全
+file:../images/%E8%8B%B1%E8%AF%AD%E8%A1%A5%E5%85%A8.gif
+* 翻译
+file:../images/%E7%BF%BB%E8%AF%91%E4%B8%AD%E6%96%87.gif

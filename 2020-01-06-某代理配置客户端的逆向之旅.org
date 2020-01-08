@@ -1,0 +1,148 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: android
+#+JEKYLL_TAGS: android
+#+JEKYLL_COMMENTS: true
+#+TITLE:某代理客户端的逆向之旅
+* 需求 
+  #+begin_quote
+  Drony是一个Android全局代理配置软件。它的原理是重定向，通过新建一个VPN，将手机所有流量重定向到Drony自身，管理手机上的网络流量，甚至可以对手机上不同App的流量进行单独配置。刚好有一个需求是针对Drony这个软件，需要自动化在Drony中动态填入代理地址和密码。
+  #+end_quote
+* 代理写入原理分析
+这里介绍一种新的定位方法，通过自动化测试工具进行资源辅助定位。本例中使用atx方案的WEditor，借助WEditor的Dump Hierarchy功能将屏幕对象进行dump，然后快速定位到相关代码准确位置。首先将应用打开至目标界面，进行用户名输入。
+[[file:../images/get-button.png]]
+可以看到通过Hierarchy得到按钮的id为button1（这里总感觉怪怪的），然后根据这个id去查找代码引用，发现根本找不到。怀疑输入对话框可能是通过系统的AlertDialog实现。进行全局搜索发现全是在一些系统内置兼容包的布局文件里（特征为abc开头）。
+[[file:../images/find-id.png]]
+所以只好用字符串定位法。先用apktool将整个apk文件进行解包，然后全局搜索 *Enter proxy username* 。
+[[file:../images/find-tip.png]]
+成功定位到代码位置为 *org.sandroproxy.drony.g.al* 中，在jeb中找到改类直接反编译看java源码，通过分析印证刚才关于button1这个按钮id的猜想。重点看代码中的 *setPositiveButton* 方法，这个方法就是第二个参数给OK按钮指定按钮响应方法，参数需要实现 *DialogInterface的OnClickListener接口* 。
+#+begin_src java
+  public final void a(View arg6) {
+      super.a(arg6);
+          AlertDialog$Builder v0 = new AlertDialog$Builder(this.h.getActivity());
+          v0.setTitle("Enter proxy username");
+          v0.setMessage("Enter proxy username");
+          m v1 = n.l(a.a(this.h));
+          EditText v2 = new EditText(this.h.getActivity());
+          v2.setHint("Enter proxy username");
+          if(v1 != null) {
+              String v1_1 = v1.g;
+              if(v1_1 != null && v1_1.length() > 0) {
+                  v2.setText(((CharSequence)v1_1));
+              }
+          }
+
+          v0.setView(((View)v2));
+          v0.setPositiveButton("OK", new am(this, v2, this.i));
+          v0.setNegativeButton("Cancel", new an(this));
+          v0.show();
+      }
+#+end_src
+*am* 这个类为按钮响应类，其中onclick方法为按钮响应方法，其中应该能够找到有关代理用户名的处理逻辑。
+[[file:../images/key-function-1.png]]
+*v1* 为用户输入的代理用户名，然后赋值给v0中的g成员变量，然后再调用 *this.c.a* 。再追查一下改方法即可得到数据库更新代码。
+[[file:../images/key-function-2.png]]
+定位到上图中的 *n.b* 中的 *org.sandroproxy.drony.c.a.a* 方法为加密方法。
+#+begin_src java
+  public static String a(String arg4, String arg5) {
+      byte[] v0 = a.a(arg4.toCharArray(), a.b);
+      byte[] v1 = arg5.getBytes();
+      SecretKeySpec v2 = new SecretKeySpec(v0, "AES");
+      Cipher v0_1 = Cipher.getInstance("AES");
+      v0_1.init(1, ((Key)v2));
+      return a.a(v0_1.doFinal(v1));
+  }
+#+end_src
+
+#+begin_quote
+加密算法这里简单说一下，就是使用"android_id"字符串配合盐，使用PBKDF2WithHmacSHA1算法生成摘要。生成的摘要作为AES加密的Key。然后对用户名和密码进行Aes加密。感兴趣可以看一下我用python还原的代码。
+#+end_quote
+
+#+begin_src python
+  salt = [
+      149, 204, 148, 11, 229, 13, 172, 35, 254, 137, 27, 149, 132, 220, 180, 155,
+      119, 234, 228, 4, 235, 224, 236, 55, 235, 254, 238, 61, 244, 135, 243, 8,
+      144, 211, 36, 254, 117, 66, 232, 122, 120, 2, 232, 234, 141, 106, 55, 154,
+      14, 79, 139, 29, 77, 132, 212, 60, 46, 108, 118, 190, 34, 161, 193, 224
+  ]
+
+    def encrypt(self, key, value):
+        """ 加密函数 """
+        speckey = hashlib.pbkdf2_hmac('sha1', key, bytearray(salt), 500, 32)
+        BS = AES.block_size
+        pad = lambda s: s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+        cipher = AES.new(speckey)
+        encrypt_array = cipher.encrypt(pad(value))
+        result = binascii.hexlify(encrypt_array)
+        return result.upper()
+
+    if __name__ == '__main__':
+        encrypt("andoird_id", "test-username")
+#+end_src
+* 解决方案（Root环境）
+#+begin_quote
+了解了加密算法，在root环境下，可以直接使用adb sqlite命令对数据库进行更新。即可达到自动写入代理配置的目的。
+#+end_quote
+#+begin_src shell
+  adb shell sqlite3 /data/data/org.sandroproxy.drony/databases/drony.db \"update proxy set host=\'69.171.229.73\',username=\'D738549506C1C9B2BF030D9AD0D895CCA4912E3DDDA72AA86E9B6D3B753BAD2BEAE2161B98C37C609A40540C4C72AE2B97E5BA8198570A1BAF13CD8539335AFD\',password=\'421EDF7EBFC436DE49D1B160989FCA65\'\";
+#+end_src
+* 解决方案（非Root环境）
+** 修改数据库文件属性
+[[file:../images/db-priv.png]]
+定位到数据库的创建位置，为数据库添加全局可读写属性，解除访问限制。 *openOrCreateDatabase* 第二个参数为权限控制参数，为0则表示为仅应用自身可读写。为3表示全局可读写，改为3并将代码重打包即可。重新安装修改后的apk，可以看到成功将数据库权限改变。然后可以通过非root环境下的sqlite命令，或者直接利用sqlitedatabase api进行数据更新操作。
+[[file:../images/db-priv-result.png]]
+#+begin_quote
+这里只是理论上解决了数据共享的问题，实际上由于 *drony.db-journal* 的属性为600。其他用户没有访问权限，当我们加载 *drony.db* 的时候会报错，所以还的想办法解决数据共享的问题。
+#+end_quote
+** 采用ShareUid
+最终我们还可以修改Drony的manifest文件，在其中添加 *sharedUserId* 。然后我们再开发一个APK，在配置中添加同样的 *sharedUserId* 。并使用相同的签名，就可以实现数据的共享。
+#+begin_src xml
+  <?xml version="1.0" encoding="utf-8"?>
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.flysands.dronydemo"
+            android:sharedUserId="com.test.shibaking">
+
+      <application
+              android:allowBackup="true"
+              android:icon="@mipmap/ic_launcher"
+              android:label="@string/app_name"
+              android:supportsRtl="true"
+              android:theme="@style/AppTheme">
+          <activity android:name=".MainActivity">
+              <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+
+                  <category android:name="android.intent.category.LAUNCHER"/>
+              </intent-filter>
+          </activity>
+          <activity android:name=".DronyConfigActivity">
+          </activity>
+      </application>
+
+  </manifest>
+#+end_src
+写一段android代码可以验证我们的想法。
+#+begin_src java
+  Context context =
+      createPackageContext("org.sandroproxy.drony", Context.CONTEXT_IGNORE_SECURITY);
+  String file = context.getDatabasePath("drony.db").getAbsolutePath();
+  Log.e(Const.TAG, "database path : " + file);
+  SQLiteDatabase
+      db =
+      SQLiteDatabase.openDatabase(file, null, SQLiteDatabase.OPEN_READWRITE,
+                                  new DatabaseErrorHandler() {
+                                      public void onCorruption(SQLiteDatabase dbObj) {
+                                          Log.e(getClass().getSimpleName(),
+                                                "database error");
+                                      }
+                                  });
+  ContentValues values = new ContentValues();
+  values.put("host", "123213");
+  values.put("username", encUsername);
+  values.put("password", encPassword);
+  int result = db.update("proxy", values, null, null);
+#+end_src
+[[file:../images/drony-result.png]]

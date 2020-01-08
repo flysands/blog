@@ -1,0 +1,53 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: emacs
+#+JEKYLL_TAGS: emacs
+#+JEKYLL_COMMENTS: true
+#+TITLE:evil-surround插件快捷键
+* evil-surround
+#+BEGIN_QUOTE
+vim-surround是tpope大神的一款life-changed插件，和文本对象组合使用能让更改成对的符号异常方便。evil-surround则是vim-surround在emacs上的实现版本。
+#+END_QUOTE
+开始之前，先说熟悉几个快捷键前缀。
+- cs for change surround
+  修改包围字符。
+
+- ds for delete surround
+  删除包围字符
+
+- ys for your surround
+  添加包围字符
+* 示例
+** 添加包围字符
+   #+BEGIN_SRC c
+   #include iostream
+   #+END_SRC
+   在 *normal* 状态下，光标停留在iostream处。按下 *y* *s* *i* *w* *"* 。为iostream添加 *"* 作为包围字符。
+   #+BEGIN_SRC c
+   #include "iostream"
+   #+END_SRC
+   此处 *iw* 表示指定一个文本对象。这里也可以兼容vim的move快捷键，比如我有三个单词 *hello world eamcs* ，我只想使用 *"* 包围前两个单词，按下 *y* *s* *2* *E* *"* 即可。
+   #+BEGIN_SRC c
+   "hello world" emacs
+   #+END_SRC
+** 修改包围字符
+   #+BEGIN_SRC c
+   #include "iostream"
+   #+END_SRC
+   按下 *c* *s* *"* *>* 则将 *"* 替换为 *<>* 。
+   #+BEGIN_SRC c
+   #include <iostream>
+   #+END_SRC
+   当编辑html的时候，可能需要使用html标签作为包围字符。按下 *c* *s* *>* *<h>* 则将 *<>* 替换为 *<h></h>* 。
+   #+BEGIN_SRC c
+   #include <h>iostream</h>
+   #+END_SRC
+   如果要把html标签，替换回来，用 *c* *s* *t* *>* 即可。 *t* 代表tag。 
+   #+BEGIN_SRC c
+   #include <iostream>
+   #+END_SRC
+** 删除包围字符
+   使用 *ds* 前缀加上指定包围字符即可执行删除操作。注意 *dst* 代表删除html标签。

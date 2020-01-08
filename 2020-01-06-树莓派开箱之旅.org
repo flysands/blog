@@ -1,0 +1,126 @@
+#+LATEX_HEADER: \usepackage{fontspec}
+#+LATEX_HEADER: \setmainfont{Songti SC}
+#+STARTUP: indent
+#+STARTUP: hidestars
+#+OPTIONS: ^:nil toc:nil
+#+JEKYLL_CATEGORIES: RPI
+#+JEKYLL_TAGS: RPI
+#+JEKYLL_COMMENTS: true
+#+TITLE:树莓派开箱之旅 
+#+begin_quote
+早在2015年的时候就看到同事在倒腾树莓派。感觉挺有趣的，直到现在才购入第一个树莓派Pi4。打算在树莓派上实践智能家居和智能语音机器人项目，当然树莓派的可玩性远不止于此，电脑能做的大部分事情，在树莓派上都能做，而树莓派以其低能耗、移动便携性、GPIO等特性，很多在普通电脑上难以做好的事情，用树莓派却是很适合的。先来一张开箱照吧。
+#+end_quote
+[[file:../images/pi4.jpeg]]
+* 配置清单
+  #+BEGIN_EXPORT html
+  <style>
+    table {
+    margin: 0 auto;
+    border-top-style: hidden;
+    border-bottom-style: hidden;
+    }
+  </style>
+  #+END_EXPORT
+| 商品                     | 数量 |
+| 入门手册                 |    1 |
+| 树莓派4B（4G，单独主板） |    1 |
+| 16G闪迪卡                |    1 |
+| 散热片                   |    1 |
+| 电源线                   |    1 |
+| HDMI线                   |    1 |
+| 读卡器                   |    1 |
+| 网线                     |    1 |
+| ABS外壳                  |    1 |
+| 炫光风扇                 |    1 |
+把所有配件装好之后，是这个样子。
+[[file:../images/pi4-with-box.jpeg]]
+* 烧写系统
+*** 系统下载
+直接前往官网下载系统，我这里直接下载 *Raspbian Buster with desktop* 。没有下载带推荐软件的版本。
+[[file:../images/download-buster-os.png]]
+*** 制证镜像
+- 插入SD卡
+  执行df命令
+  #+begin_src shell
+    df -lh
+    Filesystem     Size   Used  Avail Capacity iused      ifree %iused  Mounted on
+    /dev/disk1    233Gi  220Gi   13Gi    95% 5112366 4289854913    0%   /
+    /dev/disk2s1   15Gi  2.3Mi   15Gi     1%       0          0  100%   /Volumes/rsp
+  #+end_src
+- unmount SD卡
+  #+begin_src shell
+    diskutil unmount /dev/disk2s1
+  #+end_src
+- 确认设备号
+  #+begin_src shell
+    diskutil list
+    /dev/disk0 (internal, physical):
+       #:                       TYPE NAME                    SIZE       IDENTIFIER
+       0:      GUID_partition_scheme                        *251.0 GB   disk0
+       1:                        EFI EFI                     209.7 MB   disk0s1
+       2:          Apple_CoreStorage 磁盘                    250.1 GB   disk0s2
+       3:                 Apple_Boot Recovery HD             650.0 MB   disk0s3
+
+    /dev/disk1 (internal, virtual):
+       #:                       TYPE NAME                    SIZE       IDENTIFIER
+       0:                  Apple_HFS 磁盘                 +249.8 GB   disk1
+                                     Logical Volume on disk0s2
+                                     0D0E28CD-83F5-4BF1-8831-33B0138191C2
+                                     Unencrypted
+
+    /dev/disk2 (external, physical):
+       #:                       TYPE NAME                    SIZE       IDENTIFIER
+       0:     FDisk_partition_scheme                        *15.9 GB    disk2
+       1:             Windows_FAT_32 rsp                     15.9 GB    disk2s1
+  #+end_src
+  #+begin_quote
+  sd卡的设备路径为/dev/disk2。
+  #+end_quote
+- 烧写系统
+  #+begin_quote
+  if为下载好的树莓派系统，of为输出设备。
+  #+end_quote
+  #+begin_src shell
+    sudo dd bs=4m if=/Users/chenxuesong/Downloads/2019-09-26-raspbian-buster.img of=/dev/disk2
+  #+end_src
+- 卸载SD卡
+  #+begin_src shell
+    diskutil unmountDisk /dev/disk2
+  #+end_src
+- 在根目录写入ssh文件
+  #+begin_quote
+  直接在根目录添加空白ssh文件即可。
+  #+end_quote
+- 配置wifi连接
+  #+begin_src conf
+    country=CN
+    ctrl_interface=/var/run/wpa_supplicant
+    update_config=1
+    network={
+        ssid="wifi名称"
+        psk="wifi密码"
+        priority=1
+    }   
+  #+end_src
+#+begin_quote
+完成所有配置之后，将sd卡插入到树莓派的卡槽中开机即可。可以用局域网扫描工具获取树莓派Ip地址进行ssh连接（默认账户为pi、密码为raspberry），也可以直接用hdmi线加usb键鼠进行操作。
+#+end_quote
+
+[[file:../images/pi-ssh.png]]
+[[file:../images/pi-hdmi.jpeg]]
+* 预定义安装
+*** vnc
+使用ssh调取树莓派终端后，安装vnc viewer。第一次启用vnc viewer提示需要配置密码，8个字符，超出8个自动截取前8位。
+#+begin_src shell
+  sudo apt-get install tightvncserver
+  tightvncserver
+#+end_src
+*** nomachine
+nomachine带文件传输功能，比vnc好用一些，所以也装上，nomachine官方有树莓派特定安装文件下载地址，注意根据型号选取。
+#+begin_src shell
+  wget https://download.nomachine.com/download/6.9/Raspberry/nomachine_6.9.2_3_armhf.deb
+  sudo dpkg -i nomachine_6.9.2_3_armhf.deb
+  su root
+  /usr/NX/bin/nxserver --status
+#+end_src
+
